@@ -1,0 +1,652 @@
+openapi: 3.0.3
+info:
+  title: 'OpenVan.camp — Public API'
+  description: 'Open data API for fuel prices, currency rates and vanlife events. Free to use with attribution (CC BY 4.0).'
+  version: 1.0.0
+servers:
+  -
+    url: 'https://openvan.camp'
+tags:
+  -
+    name: 'Currency Rates'
+    description: ''
+  -
+    name: Endpoints
+    description: ''
+  -
+    name: Events
+    description: ''
+  -
+    name: 'Fuel Prices'
+    description: ''
+paths:
+  /api/currency/rates:
+    get:
+      summary: 'Get currency rates'
+      operationId: getCurrencyRates
+      description: "Returns exchange rates for 150+ currencies relative to EUR.\nData is fetched from multiple open-source APIs with automatic fallback.\nCached for 25 hours, refreshed daily at 07:00."
+      parameters: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: true
+                  rates:
+                    EUR: 1
+                    USD: 1.08
+                    GBP: 0.85
+                    RUB: 98.5
+                    TRY: 35.2
+                    GEL: 2.95
+                    KZT: 520
+                    UAH: 42.5
+                  cached: true
+                  updated_at: '2026-03-15T09:00:00+00:00'
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  rates:
+                    type: object
+                    properties:
+                      EUR:
+                        type: integer
+                        example: 1
+                      USD:
+                        type: number
+                        example: 1.08
+                      GBP:
+                        type: number
+                        example: 0.85
+                      RUB:
+                        type: number
+                        example: 98.5
+                      TRY:
+                        type: number
+                        example: 35.2
+                      GEL:
+                        type: number
+                        example: 2.95
+                      KZT:
+                        type: integer
+                        example: 520
+                      UAH:
+                        type: number
+                        example: 42.5
+                  cached:
+                    type: boolean
+                    example: true
+                  updated_at:
+                    type: string
+                    example: '2026-03-15T09:00:00+00:00'
+      tags:
+        - 'Currency Rates'
+      security: []
+  /api/geo:
+    get:
+      summary: ''
+      operationId: getApiGeo
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  country: null
+                properties:
+                  country:
+                    type: string
+                    example: null
+                    nullable: true
+      tags:
+        - Endpoints
+      security: []
+  '/api/event-drawer/{slug}/{locale}':
+    get:
+      summary: ''
+      operationId: getApiEventDrawerSlugLocale
+      description: ''
+      parameters: []
+      responses:
+        404:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  error: 'not found'
+                properties:
+                  error:
+                    type: string
+                    example: 'not found'
+      tags:
+        - Endpoints
+      security: []
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'The slug of the event drawer.'
+        example: guwi
+        required: true
+        schema:
+          type: string
+      -
+        in: path
+        name: locale
+        description: ''
+        example: eo
+        required: true
+        schema:
+          type: string
+  /api/events:
+    get:
+      summary: 'List events'
+      operationId: listEvents
+      description: "Returns a paginated list of vanlife events (exhibitions, festivals, meetups, road trips).\nFilter by status, type, country, or search by name."
+      parameters:
+        -
+          in: query
+          name: locale
+          description: 'Language code for localized names. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`. Defaults to `en`.'
+          example: en
+          required: false
+          schema:
+            type: string
+            description: 'Language code for localized names. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`. Defaults to `en`.'
+            example: en
+        -
+          in: query
+          name: status
+          description: 'Filter by event status. One of: `upcoming`, `ongoing`, `past`, `all`. Defaults to `upcoming`.'
+          example: upcoming
+          required: false
+          schema:
+            type: string
+            description: 'Filter by event status. One of: `upcoming`, `ongoing`, `past`, `all`. Defaults to `upcoming`.'
+            example: upcoming
+        -
+          in: query
+          name: type
+          description: 'Filter by event type. One of: `expo`, `festival`, `forum`, `meetup`, `roadtrip`.'
+          example: festival
+          required: false
+          schema:
+            type: string
+            description: 'Filter by event type. One of: `expo`, `festival`, `forum`, `meetup`, `roadtrip`.'
+            example: festival
+        -
+          in: query
+          name: country
+          description: '2-letter ISO country code.'
+          example: DE
+          required: false
+          schema:
+            type: string
+            description: '2-letter ISO country code.'
+            example: DE
+        -
+          in: query
+          name: search
+          description: 'Text search by event name.'
+          example: Nauticampo
+          required: false
+          schema:
+            type: string
+            description: 'Text search by event name.'
+            example: Nauticampo
+        -
+          in: query
+          name: page
+          description: 'Page number. Defaults to 1.'
+          example: 1
+          required: false
+          schema:
+            type: integer
+            description: 'Page number. Defaults to 1.'
+            example: 1
+        -
+          in: query
+          name: limit
+          description: 'Results per page (max 100). Defaults to 30.'
+          example: 30
+          required: false
+          schema:
+            type: integer
+            description: 'Results per page (max 100). Defaults to 30.'
+            example: 30
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  events:
+                    -
+                      id: 42
+                      slug: nauticampo-2026
+                      event_name: 'Nauticampo 2026'
+                      event_type: festival
+                      start_date: '2026-03-11'
+                      end_date: '2026-03-15'
+                      city: Lisbon
+                      country_code: PT
+                      country:
+                        code: pt
+                        name: Portugal
+                        flag_emoji: 🇵🇹
+                      status: published
+                      url: 'https://openvan.camp/en/event/nauticampo-2026'
+                  pagination:
+                    total: 48
+                    page: 1
+                    limit: 30
+                    pages: 2
+                properties:
+                  events:
+                    type: array
+                    example:
+                      -
+                        id: 42
+                        slug: nauticampo-2026
+                        event_name: 'Nauticampo 2026'
+                        event_type: festival
+                        start_date: '2026-03-11'
+                        end_date: '2026-03-15'
+                        city: Lisbon
+                        country_code: PT
+                        country:
+                          code: pt
+                          name: Portugal
+                          flag_emoji: 🇵🇹
+                        status: published
+                        url: 'https://openvan.camp/en/event/nauticampo-2026'
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 42
+                        slug:
+                          type: string
+                          example: nauticampo-2026
+                        event_name:
+                          type: string
+                          example: 'Nauticampo 2026'
+                        event_type:
+                          type: string
+                          example: festival
+                        start_date:
+                          type: string
+                          example: '2026-03-11'
+                        end_date:
+                          type: string
+                          example: '2026-03-15'
+                        city:
+                          type: string
+                          example: Lisbon
+                        country_code:
+                          type: string
+                          example: PT
+                        country:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                              example: pt
+                            name:
+                              type: string
+                              example: Portugal
+                            flag_emoji:
+                              type: string
+                              example: 🇵🇹
+                        status:
+                          type: string
+                          example: published
+                        url:
+                          type: string
+                          example: 'https://openvan.camp/en/event/nauticampo-2026'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 48
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 30
+                      pages:
+                        type: integer
+                        example: 2
+      tags:
+        - Events
+      security: []
+  '/api/event/{slug}':
+    get:
+      summary: 'Get event details'
+      operationId: getEventDetails
+      description: 'Returns full details for a single vanlife event by slug, including location, description, and social links.'
+      parameters:
+        -
+          in: query
+          name: locale
+          description: 'Language for localized content. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`.'
+          example: en
+          required: false
+          schema:
+            type: string
+            description: 'Language for localized content. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`.'
+            example: en
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  id: 42
+                  slug: nauticampo-2026
+                  event_name: 'Nauticampo 2026'
+                  event_type: festival
+                  start_date: '2026-03-11'
+                  end_date: '2026-03-15'
+                  city: Lisbon
+                  country_code: PT
+                  description: 'Annual vanlife and camping festival...'
+                  official_url: 'https://nauticampo.pt'
+                  image_url: 'https://...'
+                  status: published
+                  url: 'https://openvan.camp/en/event/nauticampo-2026'
+                properties:
+                  id:
+                    type: integer
+                    example: 42
+                  slug:
+                    type: string
+                    example: nauticampo-2026
+                  event_name:
+                    type: string
+                    example: 'Nauticampo 2026'
+                  event_type:
+                    type: string
+                    example: festival
+                  start_date:
+                    type: string
+                    example: '2026-03-11'
+                  end_date:
+                    type: string
+                    example: '2026-03-15'
+                  city:
+                    type: string
+                    example: Lisbon
+                  country_code:
+                    type: string
+                    example: PT
+                  description:
+                    type: string
+                    example: 'Annual vanlife and camping festival...'
+                  official_url:
+                    type: string
+                    example: 'https://nauticampo.pt'
+                  image_url:
+                    type: string
+                    example: 'https://...'
+                  status:
+                    type: string
+                    example: published
+                  url:
+                    type: string
+                    example: 'https://openvan.camp/en/event/nauticampo-2026'
+        404:
+          description: 'Not found'
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'No query results for model [App\Models\Event].'
+                properties:
+                  message:
+                    type: string
+                    example: 'No query results for model [App\Models\Event].'
+      tags:
+        - Events
+      security: []
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'The event slug.'
+        example: nauticampo-2026
+        required: true
+        schema:
+          type: string
+  '/api/event/{slug}/articles':
+    get:
+      summary: 'Get event articles'
+      operationId: getEventArticles
+      description: 'Returns news articles (sources) linked to this event, filtered by locale.'
+      parameters:
+        -
+          in: query
+          name: locale
+          description: 'Language code for filtering articles.'
+          example: en
+          required: false
+          schema:
+            type: string
+            description: 'Language code for filtering articles.'
+            example: en
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 1001
+                    title:
+                      type: string
+                      example: 'Nauticampo 2026 opens its doors'
+                    image_url:
+                      type: string
+                      example: 'https://...'
+                    published_at:
+                      type: string
+                      example: '2026-03-11T10:00:00+00:00'
+                    source_name:
+                      type: string
+                      example: 'CamperVan Magazine'
+                    original_url:
+                      type: string
+                      example: 'https://...'
+                    language:
+                      type: string
+                      example: en
+                example:
+                  -
+                    id: 1001
+                    title: 'Nauticampo 2026 opens its doors'
+                    image_url: 'https://...'
+                    published_at: '2026-03-11T10:00:00+00:00'
+                    source_name: 'CamperVan Magazine'
+                    original_url: 'https://...'
+                    language: en
+      tags:
+        - Events
+      security: []
+    parameters:
+      -
+        in: path
+        name: slug
+        description: 'The event slug.'
+        example: nauticampo-2026
+        required: true
+        schema:
+          type: string
+  /api/fuel/prices:
+    get:
+      summary: 'Get fuel prices'
+      operationId: getFuelPrices
+      description: "Returns current retail fuel prices (gasoline, diesel, LPG) for 85+ countries.\nData is updated weekly from 45+ official government sources and independent aggregators.\n\nPrices are weighted averages from multiple sources per country. The `sources` array\nlists all contributing data providers (sorted by trust weight, highest first).\n\n**License:** CC BY 4.0 — free to use with attribution to [OpenVan.camp](https://openvan.camp)."
+      parameters: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  success: true
+                  data:
+                    DE:
+                      country_code: DE
+                      country_name: Germany
+                      region: europe
+                      currency: EUR
+                      local_currency: EUR
+                      unit: liter
+                      prices:
+                        gasoline: 2.1313
+                        diesel: 2.2845
+                        lpg: 1.113
+                        e85: null
+                        premium: null
+                      price_changes:
+                        gasoline: -0.02
+                        diesel: 0.01
+                        lpg: 0.0
+                        e85: null
+                        premium: null
+                      fetched_at: '2026-03-28T13:59:57+03:00'
+                      sources:
+                        - Fuelo.net
+                        - 'EU Weekly Oil Bulletin'
+                        - Cargopedia.net
+                      sources_count: 3
+                      is_excluded: false
+                  meta:
+                    total_countries: 87
+                    updated_at: '2026-03-28 13:59:57'
+                    cache_ttl_hours: 6
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      DE:
+                        type: object
+                        properties:
+                          country_code:
+                            type: string
+                            example: DE
+                          country_name:
+                            type: string
+                            example: Germany
+                          region:
+                            type: string
+                            example: europe
+                          currency:
+                            type: string
+                            example: EUR
+                          local_currency:
+                            type: string
+                            example: EUR
+                          unit:
+                            type: string
+                            example: liter
+                          prices:
+                            type: object
+                            properties:
+                              gasoline:
+                                type: number
+                                example: 2.1313
+                              diesel:
+                                type: number
+                                example: 2.2845
+                              lpg:
+                                type: number
+                                example: 1.113
+                              e85:
+                                type: string
+                                example: null
+                                nullable: true
+                              premium:
+                                type: string
+                                example: null
+                                nullable: true
+                          price_changes:
+                            type: object
+                            properties:
+                              gasoline:
+                                type: number
+                                example: -0.02
+                              diesel:
+                                type: number
+                                example: 0.01
+                              lpg:
+                                type: number
+                                example: 0.0
+                              e85:
+                                type: string
+                                example: null
+                                nullable: true
+                              premium:
+                                type: string
+                                example: null
+                                nullable: true
+                          fetched_at:
+                            type: string
+                            example: '2026-03-28T13:59:57+03:00'
+                          sources:
+                            type: array
+                            example:
+                              - Fuelo.net
+                              - 'EU Weekly Oil Bulletin'
+                              - Cargopedia.net
+                            items:
+                              type: string
+                          sources_count:
+                            type: integer
+                            example: 3
+                          is_excluded:
+                            type: boolean
+                            example: false
+                  meta:
+                    type: object
+                    properties:
+                      total_countries:
+                        type: integer
+                        example: 87
+                      updated_at:
+                        type: string
+                        example: '2026-03-28 13:59:57'
+                      cache_ttl_hours:
+                        type: integer
+                        example: 6
+      tags:
+        - 'Fuel Prices'
+      security: []
