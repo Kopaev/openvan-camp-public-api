@@ -1,65 +1,60 @@
 # OpenVan.camp Public API
 
-> Free, open data API for **fuel prices** and **currency rates** worldwide — no auth, no registration, just use it.
+Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index, vanlife events, and news stories.
 
-[![OpenAPI 3.0](https://img.shields.io/badge/OpenAPI-3.0-85EA2D?logo=swagger)](./openapi.yaml)
-[![Countries](https://img.shields.io/badge/countries-87-blue)](https://openvan.camp/en/tools/fuel-prices)
-[![Currencies](https://img.shields.io/badge/currencies-150%2B-blue)](#currency-rates-api)
-[![License: CC BY 4.0](https://img.shields.io/badge/license-CC%20BY%204.0-green)](https://creativecommons.org/licenses/by/4.0/)
-[![No Auth](https://img.shields.io/badge/auth-none%20required-brightgreen)](#)
-[![Fuel: Weekly](https://img.shields.io/badge/fuel%20prices-weekly-orange)](#fuel-prices-api)
-[![Rates: Daily](https://img.shields.io/badge/currency%20rates-daily-orange)](#currency-rates-api)
+**Base URL:** `https://openvan.camp`  
+**Auth:** None required  
+**CORS:** Enabled  
+**License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
-**Base URL:** `https://openvan.camp`
-**OpenAPI spec:** [`openapi.yaml`](./openapi.yaml) · **Interactive docs:** [openvan.camp/docs](https://openvan.camp/docs)
+---
+
+## Endpoints
+
+| Endpoint | Description | Coverage |
+|----------|-------------|----------|
+| `GET /api/fuel/prices` | Retail fuel prices (gasoline, diesel, LPG, E85) | 121 countries |
+| `GET /api/currency/rates` | Exchange rates relative to EUR | 150+ currencies |
+| `GET /api/vanbasket/countries` | Food price index relative to world average (100 = world avg) | 92 countries |
+| `GET /api/vanbasket/compare?from=DE&to=TR` | Compare food costs between two countries | — |
+| `GET /api/vanbasket/countries/{code}` | Single country + historical snapshots | — |
+| `GET /api/events` | Vanlife events: expos, festivals, meetups, road trips | 695 events |
+| `GET /api/event/{slug}` | Full event details with geo coordinates | — |
+| `GET /api/event/{slug}/articles` | Source articles linked to an event | — |
+| `GET /api/stories` | News stories aggregated from 200+ publishers | 8200+ stories |
+| `GET /api/story/{slug}` | Full story with all source articles and direct links | — |
 
 ---
 
 ## Quick Start
 
 ```bash
-# Fuel prices — 87 countries
+# Fuel prices
 curl https://openvan.camp/api/fuel/prices
 
-# Currency exchange rates — 150+ currencies
+# Currency rates (EUR-based)
 curl https://openvan.camp/api/currency/rates
+
+# Food price index
+curl https://openvan.camp/api/vanbasket/countries
+
+# Upcoming vanlife events in Germany
+curl "https://openvan.camp/api/events?country=DE&status=upcoming&locale=en"
+
+# Latest vanlife news stories in English
+curl "https://openvan.camp/api/stories?locale=en"
 ```
 
 ---
 
-## Endpoints
+## Fuel Prices — `/api/fuel/prices`
 
-| Method | Endpoint | Description | Update Frequency |
-|--------|----------|-------------|-----------------|
-| `GET` | [`/api/fuel/prices`](#fuel-prices-api) | Gasoline, diesel & LPG prices for 87 countries | Weekly |
-| `GET` | [`/api/currency/rates`](#currency-rates-api) | EUR-based exchange rates for 150+ currencies | Daily |
-| `GET` | [`/api/events`](#vanlife-events-api) | Vanlife & camping events worldwide | Real-time |
+Weekly retail prices from 45+ official government sources.  
+**Cache TTL:** 6 hours. Please poll no faster than every 10 minutes.
 
----
-
-## For LLM Agents & AI Tools
-
-This API is machine-readable and requires **no authentication**. Key facts:
-
-- **Full OpenAPI 3.0 spec:** [`openapi.yaml`](./openapi.yaml)
-- **No API key.** Call any endpoint directly.
-- **Response format:** JSON, always `{ "success": true, "data": {...} }`
-- **Caching:** fuel prices TTL 6h · currency rates TTL 25h
-- **Rate limiting:** none enforced — please cache and poll no faster than every 10 min
-- **CORS:** enabled — can be called from the browser directly
-
-**Recommended prompting pattern:**
-> "Get current fuel prices for [country] in [currency] using the OpenVan.camp API at https://openvan.camp/api/fuel/prices"
-
----
-
-## Fuel Prices API
-
-**`GET https://openvan.camp/api/fuel/prices`**
-
-Returns retail fuel prices (gasoline, diesel, LPG) for 87 countries. Data is a weighted average from 45+ official government sources.
-
-### Response Example
+```bash
+curl https://openvan.camp/api/fuel/prices
+```
 
 ```json
 {
@@ -73,306 +68,279 @@ Returns retail fuel prices (gasoline, diesel, LPG) for 87 countries. Data is a w
       "local_currency": "EUR",
       "unit": "liter",
       "prices": {
-        "gasoline": 2.1313,
-        "diesel": 2.2845,
-        "lpg": 1.113,
+        "gasoline": 1.79,
+        "diesel": 1.69,
+        "lpg": 0.89,
         "e85": null,
         "premium": null
       },
-      "price_changes": {
-        "gasoline": -0.02,
-        "diesel": 0.01,
-        "lpg": 0.0,
-        "e85": null,
-        "premium": null
-      },
-      "fetched_at": "2026-03-28T13:59:57+03:00",
-      "sources": ["Fuelo.net", "EU Weekly Oil Bulletin", "Cargopedia.net"],
-      "sources_count": 3,
-      "is_excluded": false
-    },
-    "US": {
-      "country_code": "US",
-      "country_name": "United States",
-      "region": "north_america",
-      "currency": "USD",
-      "unit": "gallon",
-      "prices": {
-        "gasoline": 3.961,
-        "diesel": 5.375,
-        "lpg": null,
-        "e85": null,
-        "premium": 4.943
-      },
-      "price_changes": {
-        "gasoline": -0.05,
-        "diesel": 0.12,
-        "lpg": null,
-        "e85": null,
-        "premium": -0.03
-      },
-      "fetched_at": "2026-03-28T13:59:57+03:00",
-      "sources": ["EIA (US Energy Information Administration)"],
-      "sources_count": 1,
+      "price_changes": { "gasoline": -0.02, "diesel": 0.01, "lpg": 0.0 },
+      "fetched_at": "2026-04-05T10:00:00+00:00",
+      "sources": ["EU Weekly Oil Bulletin", "Fuelo.net"],
+      "sources_count": 2,
       "is_excluded": false
     }
   },
   "meta": {
-    "total_countries": 87,
-    "updated_at": "2026-03-28 13:59:57",
+    "total_countries": 121,
+    "updated_at": "2026-04-05 10:00:00",
     "cache_ttl_hours": 6
   }
 }
 ```
 
-### Field Reference
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `country_code` | `string` | ISO 3166-1 alpha-2 |
-| `country_name` | `string` | English country name |
-| `region` | `string` | See [regions](#regions) below |
-| `currency` | `string` | ISO 4217 currency code |
-| `unit` | `string` | `liter` or `gallon` (US, Ecuador) |
-| `prices.*` | `number\|null` | Retail price in local currency. `null` = no data |
-| `price_changes.*` | `number\|null` | Weekly change in local currency |
-| `fetched_at` | `ISO 8601` | Timestamp of last data collection |
-| `sources` | `string[]` | Data providers (sorted by trust weight) |
-| `sources_count` | `integer` | Number of sources in weighted average |
-| `is_excluded` | `boolean` | `true` for heavily subsidized countries |
-
-### Fuel Types
-
-| Key | Description |
-|-----|-------------|
-| `gasoline` | Regular unleaded (95 RON / E10) |
-| `diesel` | Standard diesel (B7) |
-| `lpg` | Liquefied petroleum gas (autogas) |
-| `e85` | Ethanol blend (select countries) |
-| `premium` | Premium / super unleaded (98+ RON) |
-
-### Regions
-
-| Value | Countries |
-|-------|-----------|
-| `europe` | 42 EU + EEA countries |
-| `cis` | Russia, Kazakhstan, Georgia, Armenia, Azerbaijan, Belarus, Ukraine, Moldova, Uzbekistan, Kyrgyzstan, Tajikistan |
-| `middle_east` | Turkey, Israel, Jordan, UAE, Lebanon, Qatar |
-| `central_asia` | Turkmenistan and surrounding |
-| `east_asia` | China, Hong Kong, Japan, South Korea, Thailand, Singapore |
-| `africa` | Algeria, Egypt, Morocco, Tunisia, Ghana |
-| `north_america` | USA, Canada, Mexico |
-| `latam` | Argentina, Brazil, Chile, Colombia, Ecuador, Peru, Bolivia, Uruguay, Paraguay |
-| `oceania` | Australia, New Zealand, Fiji, Papua New Guinea |
-
-### Code Examples
-
-**JavaScript — cheapest diesel in Europe:**
-```javascript
-const res = await fetch('https://openvan.camp/api/fuel/prices');
-const { data } = await res.json();
-
-const cheapest = Object.values(data)
-  .filter(c => c.region === 'europe' && c.prices.diesel !== null)
-  .sort((a, b) => a.prices.diesel - b.prices.diesel)
-  .slice(0, 5);
-
-cheapest.forEach(c =>
-  console.log(`${c.country_name}: ${c.prices.diesel} ${c.currency}/${c.unit}`)
-);
-```
-
-**Python — all countries with LPG:**
-```python
-import requests
-
-data = requests.get('https://openvan.camp/api/fuel/prices').json()['data']
-
-lpg = [
-    (v['country_name'], v['prices']['lpg'], v['currency'])
-    for v in data.values()
-    if v['prices'].get('lpg') is not None
-]
-
-for name, price, currency in sorted(lpg, key=lambda x: x[1])[:10]:
-    print(f"{name}: {price} {currency}/liter")
-```
+**Notes:**
+- `unit` is `"liter"` for most countries, `"gallon"` for US and Ecuador
+- `is_excluded: true` means the country has heavy fuel subsidies (prices don't reflect market rates)
+- `price_changes` = delta vs last week's prices
 
 ---
 
-## Currency Rates API
+## Currency Rates — `/api/currency/rates`
 
-**`GET https://openvan.camp/api/currency/rates`**
+EUR-based exchange rates from multiple open-source providers with automatic fallback.  
+**Cache TTL:** 25 hours. Refreshed daily at 07:00 UTC.
 
-Returns exchange rates for 150+ currencies relative to EUR. Updated daily at 07:00 UTC.
-
-### Response Example
+```bash
+curl https://openvan.camp/api/currency/rates
+```
 
 ```json
 {
   "success": true,
   "rates": {
     "EUR": 1,
-    "USD": 1.082,
-    "GBP": 0.853,
-    "RUB": 98.5,
-    "TRY": 36.2,
-    "GEL": 2.91,
-    "KZT": 521.4,
-    "UAH": 44.1,
-    "PLN": 4.27,
-    "CHF": 0.956
+    "USD": 1.08,
+    "GBP": 0.85,
+    "TRY": 38.5,
+    "GEL": 2.95,
+    "KZT": 510,
+    "RUB": 98.5
   },
   "cached": true,
-  "updated_at": "2026-03-28T07:00:00+00:00"
+  "updated_at": "2026-04-08T07:00:00+00:00"
 }
 ```
 
-All rates are **EUR-based** (EUR = 1). To convert between any two currencies:
-
-```javascript
-const { rates } = await fetch('https://openvan.camp/api/currency/rates').then(r => r.json());
-
-function convert(price, from, to) {
-  return (price / rates[from]) * rates[to];
-}
-
-// Example: Germany diesel (EUR) → USD
-console.log(convert(2.28, 'EUR', 'USD').toFixed(3) + ' USD/liter');
+**Convert to any currency:**
+```js
+const priceInUSD = (priceEUR / rates.EUR) * rates.USD;
+const priceInTRY = (priceEUR / rates.EUR) * rates.TRY;
 ```
 
 ---
 
-## Vanlife Events API
+## VanBasket Food Price Index — `/api/vanbasket/*`
 
-**`GET https://openvan.camp/api/events`**
-
-Returns upcoming vanlife, camping and overlanding events worldwide.
-
-### Query Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `locale` | `string` | `en` | Language: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr` |
-| `status` | `string` | `upcoming` | `upcoming` · `ongoing` · `past` · `all` |
-| `type` | `string` | — | `expo` · `festival` · `forum` · `meetup` · `roadtrip` |
-| `country` | `string` | — | ISO country code, e.g. `DE` |
-| `page` | `integer` | `1` | Page number |
-| `limit` | `integer` | `30` | Results per page (max `100`) |
+Relative cost of a food basket compared to world average (World = 100).  
+Based on World Bank ICP 2021 data, adjusted with IMF CPI.  
+**Data source:** CC BY 4.0
 
 ```bash
-# Upcoming festivals in Germany
-curl "https://openvan.camp/api/events?country=DE&type=festival&locale=en"
+# All countries
+curl https://openvan.camp/api/vanbasket/countries
 
-# All ongoing events, 100 per page
-curl "https://openvan.camp/api/events?status=ongoing&limit=100"
+# Compare two countries
+curl "https://openvan.camp/api/vanbasket/compare?from=DE&to=TR"
+
+# Single country with historical snapshots
+curl https://openvan.camp/api/vanbasket/countries/DE
 ```
 
----
-
-## Embeddable Widget
-
-Drop this into any HTML page — zero dependencies:
-
-```html
-<div id="fuel-widget" style="font-family:sans-serif;max-width:400px"></div>
-<script>
-(async () => {
-  const COUNTRIES = ['DE', 'FR', 'ES', 'IT', 'PL'];
-  const FLAGS = { DE:'🇩🇪', FR:'🇫🇷', ES:'🇪🇸', IT:'🇮🇹', PL:'🇵🇱' };
-
-  const [priceRes, rateRes] = await Promise.all([
-    fetch('https://openvan.camp/api/fuel/prices').then(r => r.json()),
-    fetch('https://openvan.camp/api/currency/rates').then(r => r.json())
-  ]);
-
-  const { data } = priceRes;
-  const { rates } = rateRes;
-  const TARGET = 'EUR'; // change to 'USD', 'GBP', etc.
-
-  let html = `<table style="width:100%;border-collapse:collapse">
-    <tr style="border-bottom:2px solid #eee">
-      <th style="text-align:left;padding:6px">Country</th>
-      <th style="text-align:right;padding:6px">Gasoline</th>
-      <th style="text-align:right;padding:6px">Diesel</th>
-    </tr>`;
-
-  for (const code of COUNTRIES) {
-    const c = data[code];
-    if (!c) continue;
-    const toTarget = p => p == null ? '—' : ((p / rates[c.currency]) * rates[TARGET]).toFixed(3);
-    const unit = c.unit === 'gallon' ? '/gal' : '/L';
-    html += `<tr style="border-bottom:1px solid #f0f0f0">
-      <td style="padding:6px">${FLAGS[code]} ${c.country_name}</td>
-      <td style="text-align:right;padding:6px">${toTarget(c.prices.gasoline)} ${TARGET}${unit}</td>
-      <td style="text-align:right;padding:6px">${toTarget(c.prices.diesel)} ${TARGET}${unit}</td>
-    </tr>`;
+```json
+{
+  "success": true,
+  "data": {
+    "CH": { "country_code": "CH", "country_name": "Switzerland", "vanbasket_index": 162.3, "pct_vs_world": 62.3 },
+    "DE": { "country_code": "DE", "country_name": "Germany",     "vanbasket_index": 118.7, "pct_vs_world": 18.7 },
+    "TR": { "country_code": "TR", "country_name": "Turkey",      "vanbasket_index":  82.4, "pct_vs_world": -17.6 },
+    "GE": { "country_code": "GE", "country_name": "Georgia",     "vanbasket_index":  64.1, "pct_vs_world": -35.9 }
+  },
+  "meta": {
+    "total_countries": 92,
+    "world_avg": 100,
+    "base_year": 2021,
+    "source": "World Bank ICP 2021",
+    "license": "CC BY 4.0"
   }
+}
+```
 
-  html += `</table>
-    <p style="font-size:11px;color:#999;margin-top:6px">
-      Data: <a href="https://openvan.camp/en/tools/fuel-prices" target="_blank">OpenVan.camp</a>
-      · CC BY 4.0 · Updated weekly
-    </p>`;
+**Compare response:**
+```json
+{
+  "success": true,
+  "data": {
+    "from": { "country_code": "DE", "country_name": "Germany", "vanbasket_index": 118.7 },
+    "to":   { "country_code": "TR", "country_name": "Turkey",  "vanbasket_index":  82.4 },
+    "diff_percent": -30.6,
+    "budget_100": 69,
+    "cheaper": true
+  }
+}
+```
 
-  document.getElementById('fuel-widget').innerHTML = html;
-})();
-</script>
+`budget_100`: if you spend €100 on food in the `from` country, you'd spend €69 in the `to` country.
+
+---
+
+## Events — `/api/events`
+
+Vanlife events: exhibitions, festivals, meetups, road trips. Updated in real time.
+
+**Query params:**
+
+| Param | Values | Default |
+|-------|--------|---------|
+| `locale` | `en` `ru` `de` `fr` `es` `pt` `tr` | `en` |
+| `status` | `upcoming` `ongoing` `past` `all` | `upcoming` |
+| `type` | `expo` `festival` `forum` `meetup` `roadtrip` | — |
+| `country` | ISO 3166-1 alpha-2 | — |
+| `search` | text | — |
+| `page` | integer | `1` |
+| `limit` | integer (max 100) | `30` |
+
+```bash
+# Upcoming events in Germany
+curl "https://openvan.camp/api/events?country=DE&status=upcoming&locale=en"
+
+# Event details
+curl "https://openvan.camp/api/event/fit-camper-2026?locale=en"
+
+# Source articles linked to an event
+curl "https://openvan.camp/api/event/fit-camper-2026/articles?locale=en"
+```
+
+```json
+{
+  "events": [
+    {
+      "id": 493,
+      "slug": "fit-camper-2026",
+      "event_name": "Fit Your Camper",
+      "event_type": "expo",
+      "event_type_label": "Exhibition",
+      "start_date": "2026-04-09",
+      "end_date": "2026-04-12",
+      "city": "Bologna",
+      "country_code": "IT",
+      "country": { "code": "it", "name": "Italy", "flag_emoji": "🇮🇹" },
+      "venue_name": "BolognaFiere",
+      "status": "upcoming",
+      "articles_count": 7,
+      "url": "https://openvan.camp/en/event/fit-camper-2026"
+    }
+  ],
+  "pagination": { "total": 48, "page": 1, "limit": 30, "pages": 2 }
+}
+```
+
+**Notes:**
+- Unknown or missing `locale` silently falls back to `en`
+- `/api/event/{slug}/articles` returns source articles filtered by `locale`; if none match, all articles are returned (may be in the original publisher language)
+
+---
+
+## Stories / News — `/api/stories`
+
+Vanlife news stories aggregated from 200+ publishers and translated into 7 languages. Each story clusters multiple source articles covering the same topic.
+
+**Query params:**
+
+| Param | Values | Default |
+|-------|--------|---------|
+| `locale` | `en` `ru` `de` `fr` `es` `pt` `tr` | `en` |
+| `category` | category slug (e.g. `camping`, `travel`, `gear`, `incident`) | — |
+| `country` | ISO 3166-1 alpha-2 | — |
+| `search` | text | — |
+| `page` | integer | `1` |
+| `limit` | integer (max 50) | `20` |
+
+```bash
+# Latest stories in English
+curl "https://openvan.camp/api/stories?locale=en"
+
+# German vanlife news in Germany
+curl "https://openvan.camp/api/stories?locale=de&country=DE"
+
+# Full story with all source links
+curl "https://openvan.camp/api/story/free-overnight-parking-netherlands?locale=en"
+```
+
+```json
+{
+  "slug": "free-overnight-parking-netherlands",
+  "title": "Free Overnight Parking for Motorhomes in the Netherlands",
+  "summary": "The Dutch motorhome community is pushing for more designated free overnight spots...",
+  "image_url": "https://...",
+  "category": { "slug": "travel", "name": "Travel" },
+  "countries": [{ "code": "nl", "name": "Netherlands", "flag_emoji": "🇳🇱" }],
+  "first_published_at": "2026-04-01T10:00:00+00:00",
+  "last_updated_at": "2026-04-03T08:00:00+00:00",
+  "articles_count": 5,
+  "url": "https://openvan.camp/en/news/travel/free-overnight-parking-netherlands",
+  "sources": [
+    {
+      "title": "Gratis overnachten in je camper: de beste plekken",
+      "original_url": "https://www.campermagazine.nl/overnachten/gratis-plaatsen",
+      "source_name": "CamperMagazine.nl",
+      "published_at": "2026-04-01T10:00:00+00:00",
+      "language": "nl",
+      "image_url": "https://..."
+    }
+  ]
+}
+```
+
+**Notes:**
+- `title` and `summary` are translated to the requested `locale`
+- `sources[].language` is always the **original publisher language**, regardless of `locale`
+- `sources[].original_url` is the direct link to the publisher article
+
+---
+
+## Response Format
+
+All JSON endpoints follow a consistent envelope:
+
+```json
+{ "success": true, "data": { ... }, "meta": { ... } }
+```
+
+Errors:
+```json
+{ "success": false, "error": "Description of the error." }
+```
+
+If you call without `Accept: application/json`, some error responses may return HTML. Always send the header:
+```
+Accept: application/json
 ```
 
 ---
 
-## Data Sources
+## Rate Limiting
 
-Prices are weighted averages from **45+ official sources**:
-
-| Region | Sources |
-|--------|---------|
-| 🇪🇺 Europe | EU Weekly Oil Bulletin (27 countries), Statistics Norway, UK BEIS |
-| 🇺🇸 North America | EIA (US Energy Information Administration), Statistics Canada (NRCan) |
-| 🇷🇺 CIS | Rosstat (Russia), GosKomStat (Kazakhstan) |
-| 🇧🇷 Latin America | ANP (Brazil), GobEnergy (Argentina), CNE (Chile) |
-| 🇯🇵 East Asia | METI (Japan), IOCL (India) |
-| 🇦🇺 Oceania | FuelWatch WA (Australia), MBIE (New Zealand) |
-| 🌍 Global | Fuelo.net, Cargopedia.net, OilPricez.com |
+120 requests per minute per IP. Please be responsible:
+- Cache fuel prices for at least 6 hours
+- Cache currency rates for at least 1 hour
+- Cache stories/events for at least 15 minutes
 
 ---
 
-## Rate Limits & Caching
+## Attribution
 
-No strict rate limits. Please be a good citizen:
+Required by CC BY 4.0. Suggested format:
 
-| Resource | Cache TTL | Recommended Poll Interval |
-|----------|-----------|--------------------------|
-| `/api/fuel/prices` | 6 hours | ≥ 10 minutes |
-| `/api/currency/rates` | 25 hours | ≥ 1 hour |
-| `/api/events` | real-time | ≥ 5 minutes |
-
-For high-traffic applications, add your own caching layer.
-
----
-
-## License & Attribution
-
-Data is available under **[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)**.
-
-Required attribution (choose one):
-
-```
-Data: OpenVan.camp (https://openvan.camp) — CC BY 4.0
-```
 ```html
-Data: <a href="https://openvan.camp/en/tools/fuel-prices">OpenVan.camp</a> (CC BY 4.0)
+Data: <a href="https://openvan.camp/">OpenVan.camp</a> — CC BY 4.0
 ```
 
 ---
 
-## Issues & Requests
+## Resources
 
-Found a wrong price? Missing a country? → [Open an issue](../../issues/new)
-
-We don't accept code contributions (the data pipeline is proprietary), but data quality issues and country requests are very welcome.
-
----
-
-*Built by [OpenVan.camp](https://openvan.camp) — aggregator of vanlife news, events and tools.*
+- **Interactive docs:** https://openvan.camp/docs
+- **OpenAPI 3.0 spec:** https://openvan.camp/docs.openapi
+- **Postman collection:** https://openvan.camp/docs.postman
+- **Developer page:** https://openvan.camp/en/developers

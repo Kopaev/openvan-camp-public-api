@@ -1,652 +1,612 @@
 openapi: 3.0.3
 info:
-  title: 'OpenVan.camp — Public API'
-  description: 'Open data API for fuel prices, currency rates and vanlife events. Free to use with attribution (CC BY 4.0).'
-  version: 1.0.0
+  title: OpenVan.camp Public API
+  description: |
+    Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index, events, and news stories.
+
+    **No authentication required. CORS enabled. License: CC BY 4.0.**
+
+    Attribution required: `Data: OpenVan.camp (https://openvan.camp) — CC BY 4.0`
+  version: "2.0.0"
+  contact:
+    url: https://openvan.camp/en/developers
+
 servers:
-  -
-    url: 'https://openvan.camp'
+  - url: https://openvan.camp
+    description: Production
+
 tags:
-  -
-    name: 'Currency Rates'
-    description: ''
-  -
-    name: Endpoints
-    description: ''
-  -
-    name: Events
-    description: ''
-  -
-    name: 'Fuel Prices'
-    description: ''
+  - name: Fuel Prices
+    description: Retail fuel prices for 121 countries. Updated weekly from 45+ official government sources.
+  - name: Currency Rates
+    description: EUR-based exchange rates for 150+ currencies. Updated daily at 07:00 UTC.
+  - name: VanBasket
+    description: Food price index relative to world average (World = 100). Based on World Bank ICP 2021 + IMF CPI adjustments.
+  - name: Events
+    description: Vanlife events (expos, festivals, meetups, road trips). Supports 7 languages.
+  - name: Stories
+    description: Vanlife news stories aggregated from 200+ publishers, translated into 7 languages. Each story includes direct source links.
+
 paths:
-  /api/currency/rates:
-    get:
-      summary: 'Get currency rates'
-      operationId: getCurrencyRates
-      description: "Returns exchange rates for 150+ currencies relative to EUR.\nData is fetched from multiple open-source APIs with automatic fallback.\nCached for 25 hours, refreshed daily at 07:00."
-      parameters: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  success: true
-                  rates:
-                    EUR: 1
-                    USD: 1.08
-                    GBP: 0.85
-                    RUB: 98.5
-                    TRY: 35.2
-                    GEL: 2.95
-                    KZT: 520
-                    UAH: 42.5
-                  cached: true
-                  updated_at: '2026-03-15T09:00:00+00:00'
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  rates:
-                    type: object
-                    properties:
-                      EUR:
-                        type: integer
-                        example: 1
-                      USD:
-                        type: number
-                        example: 1.08
-                      GBP:
-                        type: number
-                        example: 0.85
-                      RUB:
-                        type: number
-                        example: 98.5
-                      TRY:
-                        type: number
-                        example: 35.2
-                      GEL:
-                        type: number
-                        example: 2.95
-                      KZT:
-                        type: integer
-                        example: 520
-                      UAH:
-                        type: number
-                        example: 42.5
-                  cached:
-                    type: boolean
-                    example: true
-                  updated_at:
-                    type: string
-                    example: '2026-03-15T09:00:00+00:00'
-      tags:
-        - 'Currency Rates'
-      security: []
-  /api/geo:
-    get:
-      summary: ''
-      operationId: getApiGeo
-      description: ''
-      parameters: []
-      responses:
-        200:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  country: null
-                properties:
-                  country:
-                    type: string
-                    example: null
-                    nullable: true
-      tags:
-        - Endpoints
-      security: []
-  '/api/event-drawer/{slug}/{locale}':
-    get:
-      summary: ''
-      operationId: getApiEventDrawerSlugLocale
-      description: ''
-      parameters: []
-      responses:
-        404:
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  error: 'not found'
-                properties:
-                  error:
-                    type: string
-                    example: 'not found'
-      tags:
-        - Endpoints
-      security: []
-    parameters:
-      -
-        in: path
-        name: slug
-        description: 'The slug of the event drawer.'
-        example: guwi
-        required: true
-        schema:
-          type: string
-      -
-        in: path
-        name: locale
-        description: ''
-        example: eo
-        required: true
-        schema:
-          type: string
-  /api/events:
-    get:
-      summary: 'List events'
-      operationId: listEvents
-      description: "Returns a paginated list of vanlife events (exhibitions, festivals, meetups, road trips).\nFilter by status, type, country, or search by name."
-      parameters:
-        -
-          in: query
-          name: locale
-          description: 'Language code for localized names. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`. Defaults to `en`.'
-          example: en
-          required: false
-          schema:
-            type: string
-            description: 'Language code for localized names. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`. Defaults to `en`.'
-            example: en
-        -
-          in: query
-          name: status
-          description: 'Filter by event status. One of: `upcoming`, `ongoing`, `past`, `all`. Defaults to `upcoming`.'
-          example: upcoming
-          required: false
-          schema:
-            type: string
-            description: 'Filter by event status. One of: `upcoming`, `ongoing`, `past`, `all`. Defaults to `upcoming`.'
-            example: upcoming
-        -
-          in: query
-          name: type
-          description: 'Filter by event type. One of: `expo`, `festival`, `forum`, `meetup`, `roadtrip`.'
-          example: festival
-          required: false
-          schema:
-            type: string
-            description: 'Filter by event type. One of: `expo`, `festival`, `forum`, `meetup`, `roadtrip`.'
-            example: festival
-        -
-          in: query
-          name: country
-          description: '2-letter ISO country code.'
-          example: DE
-          required: false
-          schema:
-            type: string
-            description: '2-letter ISO country code.'
-            example: DE
-        -
-          in: query
-          name: search
-          description: 'Text search by event name.'
-          example: Nauticampo
-          required: false
-          schema:
-            type: string
-            description: 'Text search by event name.'
-            example: Nauticampo
-        -
-          in: query
-          name: page
-          description: 'Page number. Defaults to 1.'
-          example: 1
-          required: false
-          schema:
-            type: integer
-            description: 'Page number. Defaults to 1.'
-            example: 1
-        -
-          in: query
-          name: limit
-          description: 'Results per page (max 100). Defaults to 30.'
-          example: 30
-          required: false
-          schema:
-            type: integer
-            description: 'Results per page (max 100). Defaults to 30.'
-            example: 30
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  events:
-                    -
-                      id: 42
-                      slug: nauticampo-2026
-                      event_name: 'Nauticampo 2026'
-                      event_type: festival
-                      start_date: '2026-03-11'
-                      end_date: '2026-03-15'
-                      city: Lisbon
-                      country_code: PT
-                      country:
-                        code: pt
-                        name: Portugal
-                        flag_emoji: 🇵🇹
-                      status: published
-                      url: 'https://openvan.camp/en/event/nauticampo-2026'
-                  pagination:
-                    total: 48
-                    page: 1
-                    limit: 30
-                    pages: 2
-                properties:
-                  events:
-                    type: array
-                    example:
-                      -
-                        id: 42
-                        slug: nauticampo-2026
-                        event_name: 'Nauticampo 2026'
-                        event_type: festival
-                        start_date: '2026-03-11'
-                        end_date: '2026-03-15'
-                        city: Lisbon
-                        country_code: PT
-                        country:
-                          code: pt
-                          name: Portugal
-                          flag_emoji: 🇵🇹
-                        status: published
-                        url: 'https://openvan.camp/en/event/nauticampo-2026'
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                          example: 42
-                        slug:
-                          type: string
-                          example: nauticampo-2026
-                        event_name:
-                          type: string
-                          example: 'Nauticampo 2026'
-                        event_type:
-                          type: string
-                          example: festival
-                        start_date:
-                          type: string
-                          example: '2026-03-11'
-                        end_date:
-                          type: string
-                          example: '2026-03-15'
-                        city:
-                          type: string
-                          example: Lisbon
-                        country_code:
-                          type: string
-                          example: PT
-                        country:
-                          type: object
-                          properties:
-                            code:
-                              type: string
-                              example: pt
-                            name:
-                              type: string
-                              example: Portugal
-                            flag_emoji:
-                              type: string
-                              example: 🇵🇹
-                        status:
-                          type: string
-                          example: published
-                        url:
-                          type: string
-                          example: 'https://openvan.camp/en/event/nauticampo-2026'
-                  pagination:
-                    type: object
-                    properties:
-                      total:
-                        type: integer
-                        example: 48
-                      page:
-                        type: integer
-                        example: 1
-                      limit:
-                        type: integer
-                        example: 30
-                      pages:
-                        type: integer
-                        example: 2
-      tags:
-        - Events
-      security: []
-  '/api/event/{slug}':
-    get:
-      summary: 'Get event details'
-      operationId: getEventDetails
-      description: 'Returns full details for a single vanlife event by slug, including location, description, and social links.'
-      parameters:
-        -
-          in: query
-          name: locale
-          description: 'Language for localized content. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`.'
-          example: en
-          required: false
-          schema:
-            type: string
-            description: 'Language for localized content. One of: `en`, `ru`, `de`, `fr`, `es`, `pt`, `tr`.'
-            example: en
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  id: 42
-                  slug: nauticampo-2026
-                  event_name: 'Nauticampo 2026'
-                  event_type: festival
-                  start_date: '2026-03-11'
-                  end_date: '2026-03-15'
-                  city: Lisbon
-                  country_code: PT
-                  description: 'Annual vanlife and camping festival...'
-                  official_url: 'https://nauticampo.pt'
-                  image_url: 'https://...'
-                  status: published
-                  url: 'https://openvan.camp/en/event/nauticampo-2026'
-                properties:
-                  id:
-                    type: integer
-                    example: 42
-                  slug:
-                    type: string
-                    example: nauticampo-2026
-                  event_name:
-                    type: string
-                    example: 'Nauticampo 2026'
-                  event_type:
-                    type: string
-                    example: festival
-                  start_date:
-                    type: string
-                    example: '2026-03-11'
-                  end_date:
-                    type: string
-                    example: '2026-03-15'
-                  city:
-                    type: string
-                    example: Lisbon
-                  country_code:
-                    type: string
-                    example: PT
-                  description:
-                    type: string
-                    example: 'Annual vanlife and camping festival...'
-                  official_url:
-                    type: string
-                    example: 'https://nauticampo.pt'
-                  image_url:
-                    type: string
-                    example: 'https://...'
-                  status:
-                    type: string
-                    example: published
-                  url:
-                    type: string
-                    example: 'https://openvan.camp/en/event/nauticampo-2026'
-        404:
-          description: 'Not found'
-          content:
-            application/json:
-              schema:
-                type: object
-                example:
-                  message: 'No query results for model [App\Models\Event].'
-                properties:
-                  message:
-                    type: string
-                    example: 'No query results for model [App\Models\Event].'
-      tags:
-        - Events
-      security: []
-    parameters:
-      -
-        in: path
-        name: slug
-        description: 'The event slug.'
-        example: nauticampo-2026
-        required: true
-        schema:
-          type: string
-  '/api/event/{slug}/articles':
-    get:
-      summary: 'Get event articles'
-      operationId: getEventArticles
-      description: 'Returns news articles (sources) linked to this event, filtered by locale.'
-      parameters:
-        -
-          in: query
-          name: locale
-          description: 'Language code for filtering articles.'
-          example: en
-          required: false
-          schema:
-            type: string
-            description: 'Language code for filtering articles.'
-            example: en
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                      example: 1001
-                    title:
-                      type: string
-                      example: 'Nauticampo 2026 opens its doors'
-                    image_url:
-                      type: string
-                      example: 'https://...'
-                    published_at:
-                      type: string
-                      example: '2026-03-11T10:00:00+00:00'
-                    source_name:
-                      type: string
-                      example: 'CamperVan Magazine'
-                    original_url:
-                      type: string
-                      example: 'https://...'
-                    language:
-                      type: string
-                      example: en
-                example:
-                  -
-                    id: 1001
-                    title: 'Nauticampo 2026 opens its doors'
-                    image_url: 'https://...'
-                    published_at: '2026-03-11T10:00:00+00:00'
-                    source_name: 'CamperVan Magazine'
-                    original_url: 'https://...'
-                    language: en
-      tags:
-        - Events
-      security: []
-    parameters:
-      -
-        in: path
-        name: slug
-        description: 'The event slug.'
-        example: nauticampo-2026
-        required: true
-        schema:
-          type: string
+
+  # ─── FUEL PRICES ──────────────────────────────────────────────────────────
+
   /api/fuel/prices:
     get:
-      summary: 'Get fuel prices'
+      tags: [Fuel Prices]
+      summary: Get fuel prices
       operationId: getFuelPrices
-      description: "Returns current retail fuel prices (gasoline, diesel, LPG) for 85+ countries.\nData is updated weekly from 45+ official government sources and independent aggregators.\n\nPrices are weighted averages from multiple sources per country. The `sources` array\nlists all contributing data providers (sorted by trust weight, highest first).\n\n**License:** CC BY 4.0 — free to use with attribution to [OpenVan.camp](https://openvan.camp)."
-      parameters: []
+      description: |
+        Retail fuel prices for 121 countries (gasoline, diesel, LPG, E85, premium).
+        Weighted averages from 45+ official government sources.
+        Cache TTL: 6 hours. Please poll no faster than every 10 minutes.
       responses:
-        200:
+        "200":
           description: Success
           content:
             application/json:
               schema:
+                $ref: "#/components/schemas/FuelPricesResponse"
+              example:
+                success: true
+                data:
+                  DE:
+                    country_code: DE
+                    country_name: Germany
+                    region: europe
+                    currency: EUR
+                    local_currency: EUR
+                    unit: liter
+                    prices:
+                      gasoline: 1.79
+                      diesel: 1.69
+                      lpg: 0.89
+                      e85: null
+                      premium: null
+                    price_changes:
+                      gasoline: -0.02
+                      diesel: 0.01
+                      lpg: 0.0
+                    fetched_at: "2026-04-05T10:00:00+00:00"
+                    sources: ["EU Weekly Oil Bulletin", "Fuelo.net"]
+                    sources_count: 2
+                    is_excluded: false
+                meta:
+                  total_countries: 121
+                  updated_at: "2026-04-05 10:00:00"
+                  cache_ttl_hours: 6
+
+  # ─── CURRENCY RATES ───────────────────────────────────────────────────────
+
+  /api/currency/rates:
+    get:
+      tags: [Currency Rates]
+      summary: Get currency rates
+      operationId: getCurrencyRates
+      description: |
+        EUR-based exchange rates for 150+ currencies.
+        Multi-source with automatic fallback. Cache TTL: 25 hours. Refreshed daily at 07:00 UTC.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrencyRatesResponse"
+              example:
+                success: true
+                rates:
+                  EUR: 1
+                  USD: 1.08
+                  GBP: 0.85
+                  TRY: 38.5
+                  GEL: 2.95
+                  KZT: 510
+                  RUB: 98.5
+                cached: true
+                updated_at: "2026-04-08T07:00:00+00:00"
+
+  # ─── VANBASKET ────────────────────────────────────────────────────────────
+
+  /api/vanbasket/countries:
+    get:
+      tags: [VanBasket]
+      summary: Get all countries
+      operationId: getVanbasketCountries
+      description: |
+        Food price index for 92 countries. World average = 100.
+        Above 100 = more expensive than world average; below 100 = cheaper.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VanbasketCountriesResponse"
+              example:
+                success: true
+                data:
+                  CH:
+                    country_code: CH
+                    country_name: Switzerland
+                    vanbasket_index: 162.3
+                    pct_vs_world: 62.3
+                    region: europe
+                  DE:
+                    country_code: DE
+                    country_name: Germany
+                    vanbasket_index: 118.7
+                    pct_vs_world: 18.7
+                    region: europe
+                  GE:
+                    country_code: GE
+                    country_name: Georgia
+                    vanbasket_index: 64.1
+                    pct_vs_world: -35.9
+                    region: asia
+                meta:
+                  total_countries: 92
+                  world_avg: 100
+                  base_year: 2021
+                  source: World Bank ICP 2021
+                  license: CC BY 4.0
+
+  /api/vanbasket/compare:
+    get:
+      tags: [VanBasket]
+      summary: Compare two countries
+      operationId: compareVanbasket
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: ISO 3166-1 alpha-2 code of home country
+          schema:
+            type: string
+            example: DE
+        - name: to
+          in: query
+          required: true
+          description: ISO 3166-1 alpha-2 code of destination country
+          schema:
+            type: string
+            example: TR
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  from:
+                    country_code: DE
+                    country_name: Germany
+                    vanbasket_index: 118.7
+                  to:
+                    country_code: TR
+                    country_name: Turkey
+                    vanbasket_index: 82.4
+                  diff_percent: -30.6
+                  budget_100: 69
+                  cheaper: true
+        "404":
+          description: One or both country codes not found
+          content:
+            application/json:
+              example:
+                success: false
+                error: One or both country codes not found.
+        "422":
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              example:
+                success: false
+                error: Parameters "from" and "to" are required (ISO 3166-1 alpha-2 codes).
+
+  /api/vanbasket/countries/{code}:
+    get:
+      tags: [VanBasket]
+      summary: Get single country with history
+      operationId: getVanbasketCountry
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: ISO 3166-1 alpha-2 country code
+          schema:
+            type: string
+            example: DE
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              example:
+                success: true
+                data:
+                  country:
+                    country_code: DE
+                    country_name: Germany
+                    vanbasket_index: 118.7
+                    pct_vs_world: 18.7
+                    icp_baseline: 116.2
+                    icp_year: 2021
+                    data_quality: official
+                    region: europe
+                  snapshots:
+                    - snapshot_date: "2022-01-01"
+                      vanbasket_index: 114.2
+                      source: imf_cpi
+                    - snapshot_date: "2023-01-01"
+                      vanbasket_index: 116.8
+                      source: imf_cpi
+        "404":
+          description: Country not found
+          content:
+            application/json:
+              example:
+                success: false
+                error: Country not found.
+
+  # ─── EVENTS ───────────────────────────────────────────────────────────────
+
+  /api/events:
+    get:
+      tags: [Events]
+      summary: List events
+      operationId: getEvents
+      description: |
+        Paginated list of vanlife events. Filter by status, type, country, or name.
+        Default locale: `en`. Unknown locale falls back to `en`.
+      parameters:
+        - name: locale
+          in: query
+          description: "Language for event names. One of: en, ru, de, fr, es, pt, tr. Default: en."
+          schema:
+            type: string
+            enum: [en, ru, de, fr, es, pt, tr]
+            default: en
+            example: en
+        - name: status
+          in: query
+          description: "Filter by event status. Default: upcoming."
+          schema:
+            type: string
+            enum: [upcoming, ongoing, past, all]
+            default: upcoming
+        - name: type
+          in: query
+          description: Filter by event type.
+          schema:
+            type: string
+            enum: [expo, festival, forum, meetup, roadtrip]
+        - name: country
+          in: query
+          description: ISO 3166-1 alpha-2 country code.
+          schema:
+            type: string
+            example: DE
+        - name: search
+          in: query
+          description: Text search by event name.
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Max 100.
+          schema:
+            type: integer
+            default: 30
+            maximum: 100
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              example:
+                events:
+                  - id: 493
+                    slug: fit-camper-2026
+                    event_name: Fit Your Camper
+                    event_type: expo
+                    event_type_label: Exhibition
+                    event_type_emoji: "\U0001F3AA"
+                    start_date: "2026-04-09"
+                    end_date: "2026-04-12"
+                    city: Bologna
+                    country_code: IT
+                    country:
+                      code: it
+                      name: Italy
+                      flag_emoji: "\U0001F1EE\U0001F1F9"
+                    venue_name: BolognaFiere
+                    status: upcoming
+                    articles_count: 7
+                    url: https://openvan.camp/en/event/fit-camper-2026
+                pagination:
+                  total: 48
+                  page: 1
+                  limit: 30
+                  pages: 2
+
+  /api/event/{slug}:
+    get:
+      tags: [Events]
+      summary: Get event details
+      operationId: getEvent
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            example: fit-camper-2026
+        - name: locale
+          in: query
+          schema:
+            type: string
+            enum: [en, ru, de, fr, es, pt, tr]
+            default: en
+      responses:
+        "200":
+          description: Full event details including geo coordinates, description, social links
+        "404":
+          description: Event not found
+
+  /api/event/{slug}/articles:
+    get:
+      tags: [Events]
+      summary: Get event source articles
+      operationId: getEventArticles
+      description: |
+        Returns source articles linked to this event.
+        Attempts to filter by `locale` (original publisher language).
+        **Fallback:** if no articles match the locale, all articles are returned regardless of language.
+        Check `language` field on each article for the actual language.
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            example: fit-camper-2026
+        - name: locale
+          in: query
+          description: "Filter articles by source language. Default: en."
+          schema:
+            type: string
+            enum: [en, ru, de, fr, es, pt, tr]
+            default: en
+      responses:
+        "200":
+          description: Array of source articles
+          content:
+            application/json:
+              example:
+                - id: 1001
+                  title: Fit Your Camper 2026 opens in Bologna
+                  image_url: https://example.com/image.jpg
+                  published_at: "2026-04-09T10:00:00+00:00"
+                  source_name: CamperVan Magazine
+                  original_url: https://example.com/article
+                  language: en
+
+  # ─── STORIES ──────────────────────────────────────────────────────────────
+
+  /api/stories:
+    get:
+      tags: [Stories]
+      summary: List news stories
+      operationId: getStories
+      description: |
+        Paginated list of vanlife news stories. Titles and summaries are translated.
+        `sources` on each story (via `/api/story/{slug}`) contains original publisher links.
+        Default locale: `en`. Unknown locale falls back to `en`.
+      parameters:
+        - name: locale
+          in: query
+          description: "Language for titles and summaries. One of: en, ru, de, fr, es, pt, tr. Default: en."
+          schema:
+            type: string
+            enum: [en, ru, de, fr, es, pt, tr]
+            default: en
+            example: en
+        - name: category
+          in: query
+          description: Category slug (e.g. camping, travel, gear, incident, lifestyle, opening).
+          schema:
+            type: string
+            example: camping
+        - name: country
+          in: query
+          description: ISO 3166-1 alpha-2 country code.
+          schema:
+            type: string
+            example: DE
+        - name: search
+          in: query
+          description: Text search by story title.
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Max 50.
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              example:
+                stories:
+                  - slug: free-overnight-parking-netherlands
+                    title: Free Overnight Parking for Motorhomes in the Netherlands
+                    summary: The Dutch motorhome community is pushing for more designated free overnight spots...
+                    image_url: https://example.com/image.jpg
+                    category:
+                      slug: travel
+                      name: Travel
+                    countries:
+                      - code: nl
+                        name: Netherlands
+                        flag_emoji: "\U0001F1F3\U0001F1F1"
+                    first_published_at: "2026-04-01T10:00:00+00:00"
+                    articles_count: 5
+                    url: https://openvan.camp/en/news/travel/free-overnight-parking-netherlands
+                pagination:
+                  total: 8244
+                  page: 1
+                  limit: 20
+                  pages: 413
+
+  /api/story/{slug}:
+    get:
+      tags: [Stories]
+      summary: Get story with sources
+      operationId: getStory
+      description: |
+        Full story details including all source articles with direct publisher links.
+        `sources[].original_url` — direct link to the publisher article.
+        `sources[].language` — original publisher language (independent of requested locale).
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            example: free-overnight-parking-netherlands
+        - name: locale
+          in: query
+          description: "Language for title and summary. Default: en."
+          schema:
+            type: string
+            enum: [en, ru, de, fr, es, pt, tr]
+            default: en
+      responses:
+        "200":
+          description: Full story with sources
+          content:
+            application/json:
+              example:
+                slug: free-overnight-parking-netherlands
+                title: Free Overnight Parking for Motorhomes in the Netherlands
+                summary: The Dutch motorhome community is pushing for more designated free overnight spots...
+                image_url: https://example.com/image.jpg
+                category:
+                  slug: travel
+                  name: Travel
+                countries:
+                  - code: nl
+                    name: Netherlands
+                    flag_emoji: "\U0001F1F3\U0001F1F1"
+                first_published_at: "2026-04-01T10:00:00+00:00"
+                last_updated_at: "2026-04-03T08:00:00+00:00"
+                articles_count: 5
+                url: https://openvan.camp/en/news/travel/free-overnight-parking-netherlands
+                sources:
+                  - title: "Gratis overnachten in je camper: de beste plekken"
+                    original_url: https://www.campermagazine.nl/overnachten/gratis-plaatsen
+                    source_name: CamperMagazine.nl
+                    published_at: "2026-04-01T10:00:00+00:00"
+                    language: nl
+                    image_url: https://example.com/src-image.jpg
+        "404":
+          description: Story not found
+          content:
+            application/json:
+              example:
+                error: Story not found.
+
+# ─── SCHEMAS ──────────────────────────────────────────────────────────────────
+
+components:
+  schemas:
+    FuelPricesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              country_code:
+                type: string
+              country_name:
+                type: string
+              region:
+                type: string
+              currency:
+                type: string
+              unit:
+                type: string
+                enum: [liter, gallon]
+              prices:
                 type: object
-                example:
-                  success: true
-                  data:
-                    DE:
-                      country_code: DE
-                      country_name: Germany
-                      region: europe
-                      currency: EUR
-                      local_currency: EUR
-                      unit: liter
-                      prices:
-                        gasoline: 2.1313
-                        diesel: 2.2845
-                        lpg: 1.113
-                        e85: null
-                        premium: null
-                      price_changes:
-                        gasoline: -0.02
-                        diesel: 0.01
-                        lpg: 0.0
-                        e85: null
-                        premium: null
-                      fetched_at: '2026-03-28T13:59:57+03:00'
-                      sources:
-                        - Fuelo.net
-                        - 'EU Weekly Oil Bulletin'
-                        - Cargopedia.net
-                      sources_count: 3
-                      is_excluded: false
-                  meta:
-                    total_countries: 87
-                    updated_at: '2026-03-28 13:59:57'
-                    cache_ttl_hours: 6
                 properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      DE:
-                        type: object
-                        properties:
-                          country_code:
-                            type: string
-                            example: DE
-                          country_name:
-                            type: string
-                            example: Germany
-                          region:
-                            type: string
-                            example: europe
-                          currency:
-                            type: string
-                            example: EUR
-                          local_currency:
-                            type: string
-                            example: EUR
-                          unit:
-                            type: string
-                            example: liter
-                          prices:
-                            type: object
-                            properties:
-                              gasoline:
-                                type: number
-                                example: 2.1313
-                              diesel:
-                                type: number
-                                example: 2.2845
-                              lpg:
-                                type: number
-                                example: 1.113
-                              e85:
-                                type: string
-                                example: null
-                                nullable: true
-                              premium:
-                                type: string
-                                example: null
-                                nullable: true
-                          price_changes:
-                            type: object
-                            properties:
-                              gasoline:
-                                type: number
-                                example: -0.02
-                              diesel:
-                                type: number
-                                example: 0.01
-                              lpg:
-                                type: number
-                                example: 0.0
-                              e85:
-                                type: string
-                                example: null
-                                nullable: true
-                              premium:
-                                type: string
-                                example: null
-                                nullable: true
-                          fetched_at:
-                            type: string
-                            example: '2026-03-28T13:59:57+03:00'
-                          sources:
-                            type: array
-                            example:
-                              - Fuelo.net
-                              - 'EU Weekly Oil Bulletin'
-                              - Cargopedia.net
-                            items:
-                              type: string
-                          sources_count:
-                            type: integer
-                            example: 3
-                          is_excluded:
-                            type: boolean
-                            example: false
-                  meta:
-                    type: object
-                    properties:
-                      total_countries:
-                        type: integer
-                        example: 87
-                      updated_at:
-                        type: string
-                        example: '2026-03-28 13:59:57'
-                      cache_ttl_hours:
-                        type: integer
-                        example: 6
-      tags:
-        - 'Fuel Prices'
-      security: []
+                  gasoline: { type: number, nullable: true }
+                  diesel:   { type: number, nullable: true }
+                  lpg:      { type: number, nullable: true }
+                  e85:      { type: number, nullable: true }
+                  premium:  { type: number, nullable: true }
+              price_changes:
+                type: object
+              sources:
+                type: array
+                items:
+                  type: string
+              sources_count:
+                type: integer
+              is_excluded:
+                type: boolean
+        meta:
+          type: object
+
+    CurrencyRatesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        rates:
+          type: object
+          additionalProperties:
+            type: number
+        cached:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+
+    VanbasketCountriesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              country_code:   { type: string }
+              country_name:   { type: string }
+              vanbasket_index: { type: number }
+              pct_vs_world:   { type: number }
+              region:         { type: string }
+        meta:
+          type: object
