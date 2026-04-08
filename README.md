@@ -1,6 +1,6 @@
 # OpenVan.camp Public API
 
-Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index, vanlife events, and news stories.
+Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index, vanlife events, and news stories — all in one place, no registration required.
 
 **Base URL:** `https://openvan.camp`  
 **Auth:** None required  
@@ -9,13 +9,26 @@ Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index
 
 ---
 
+## What is authoritative
+
+| Resource | Purpose |
+|----------|---------|
+| This README | Quick overview and code examples |
+| [`/docs`](https://openvan.camp/docs) | Interactive documentation with "Try it out" |
+| [`/docs.openapi`](https://openvan.camp/docs.openapi) | Full OpenAPI 3.0 contract (always up to date) |
+| [`/docs.postman`](https://openvan.camp/docs.postman) | Postman collection |
+
+The OpenAPI spec at `/docs.openapi` is generated from the live codebase and is the authoritative contract. Numbers in this README (country counts, story totals) are approximate and updated periodically — check `/api/fuel/prices` meta or `/api/stories` pagination for current totals.
+
+---
+
 ## Endpoints
 
 | Endpoint | Description | Coverage |
 |----------|-------------|----------|
-| `GET /api/fuel/prices` | Retail fuel prices (gasoline, diesel, LPG, E85) | 121 countries |
+| `GET /api/fuel/prices` | Retail fuel prices (gasoline, diesel, LPG, E85) | 120+ countries |
 | `GET /api/currency/rates` | Exchange rates relative to EUR | 150+ currencies |
-| `GET /api/vanbasket/countries` | Food price index relative to world average (100 = world avg) | 92 countries |
+| `GET /api/vanbasket/countries` | Food price index relative to world average (100 = world avg) | 90+ countries |
 | `GET /api/vanbasket/compare?from=DE&to=TR` | Compare food costs between two countries | — |
 | `GET /api/vanbasket/countries/{code}` | Single country + historical snapshots | — |
 | `GET /api/events` | Vanlife events: expos, festivals, meetups, road trips | 695 events |
