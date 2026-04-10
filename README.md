@@ -317,7 +317,18 @@ curl "https://openvan.camp/api/story/free-overnight-parking-netherlands?locale=e
 All JSON endpoints follow a consistent envelope:
 
 ```json
-{ "success": true, "data": { ... }, "meta": { ... } }
+{ "success": true, "data": { ... }, "meta": { ... }, "_attribution": { ... } }
+```
+
+Every response includes an `_attribution` object:
+
+```json
+"_attribution": {
+  "data_source": "openvan.camp",
+  "license": "CC BY 4.0",
+  "attribution_url": "https://openvan.camp/",
+  "attribution_html": "Data: <a href=\"https://openvan.camp/\">OpenVan.camp</a> (CC BY 4.0)"
+}
 ```
 
 Errors:
@@ -348,6 +359,31 @@ Required by CC BY 4.0. Suggested format:
 ```html
 Data: <a href="https://openvan.camp/">OpenVan.camp</a> — CC BY 4.0
 ```
+
+### Identify your integration
+
+Pass `?source=yoursite.com` with any request — no registration needed. Your value is echoed back as `_attribution.your_source` so you can verify it's working:
+
+```bash
+curl "https://openvan.camp/api/fuel/prices?source=myapp.com"
+```
+
+```json
+{
+  "success": true,
+  "data": { "..." },
+  "meta": { "..." },
+  "_attribution": {
+    "data_source": "openvan.camp",
+    "license": "CC BY 4.0",
+    "attribution_url": "https://openvan.camp/",
+    "attribution_html": "Data: <a href=\"https://openvan.camp/\">OpenVan.camp</a> (CC BY 4.0)",
+    "your_source": "myapp.com"
+  }
+}
+```
+
+This helps us understand how the data is being used and acknowledge active projects.
 
 ---
 
