@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 
 import { VERSION } from "./config.js";
 import {
@@ -30,9 +31,19 @@ import {
 } from "./tools/vanbasket.js";
 import { getCurrencyRate, getCurrencyRateInput } from "./tools/currency.js";
 
+// Все 11 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
+// не пишет данные, не удаляет записи. Annotations транслируются в UI хостов
+// (ChatGPT: DEV > Приложения, Claude Desktop, Cursor) — без них SDK проставляет
+// MCP defaults (destructiveHint=true), и хосты помечают нас как "разрушительные".
+const READ_ONLY: ToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true, // вызываем удалённый API openvan.camp
+};
+
 /**
  * Factory shared between stdio (dist/index.js) and HTTP (dist/sse.js) entry points.
- * Every tool is read-only and safe to call without human confirmation.
  */
 export function createServer(): McpServer {
   const server = new McpServer({
@@ -41,80 +52,135 @@ export function createServer(): McpServer {
   });
 
   // Fuel prices
-  server.tool(
+  server.registerTool(
     "get_fuel_prices",
-    "Current retail fuel prices (gasoline, diesel, LPG, CNG) for 125+ countries. Pass country_code to get one country in detail; omit it for a summary list.",
-    getFuelPricesInput,
+    {
+      title: "Get Fuel Prices",
+      description:
+        "Current retail fuel prices (gasoline, diesel, LPG, CNG) for 125+ countries. Pass country_code to get one country in detail; omit it for a summary list.",
+      inputSchema: getFuelPricesInput,
+      annotations: READ_ONLY,
+    },
     getFuelPrices
   );
-  server.tool(
+  server.registerTool(
     "compare_fuel_prices",
-    "Compare current prices for one fuel type across 2-10 countries. Returns sorted table cheapest-first.",
-    compareFuelPricesInput,
+    {
+      title: "Compare Fuel Prices",
+      description:
+        "Compare current prices for one fuel type across 2-10 countries. Returns sorted table cheapest-first.",
+      inputSchema: compareFuelPricesInput,
+      annotations: READ_ONLY,
+    },
     compareFuelPrices
   );
-  server.tool(
+  server.registerTool(
     "find_cheapest_fuel",
-    "Find the cheapest countries for a given fuel type in a region (or worldwide). Useful for route planning.",
-    findCheapestFuelInput,
+    {
+      title: "Find Cheapest Fuel",
+      description:
+        "Find the cheapest countries for a given fuel type in a region (or worldwide). Useful for route planning.",
+      inputSchema: findCheapestFuelInput,
+      annotations: READ_ONLY,
+    },
     findCheapestFuel
   );
 
   // VanSky weather
-  server.tool(
+  server.registerTool(
     "get_vansky_weather",
-    "Get VanSky vanlife weather suitability score (0-100) for a country: van_score, sleep_score, solar yield, driving conditions, awning safety, condensation risk, 7-day forecast.",
-    getVanSkyWeatherInput,
+    {
+      title: "Get VanSky Weather Score",
+      description:
+        "Get VanSky vanlife weather suitability score (0-100) for a country: van_score, sleep_score, solar yield, driving conditions, awning safety, condensation risk, 7-day forecast.",
+      inputSchema: getVanSkyWeatherInput,
+      annotations: READ_ONLY,
+    },
     getVanSkyWeather
   );
-  server.tool(
+  server.registerTool(
     "list_vansky_top",
-    "List the top N countries with the highest VanSky van-travel suitability score today.",
-    listVanSkyTopInput,
+    {
+      title: "List Top VanSky Countries",
+      description:
+        "List the top N countries with the highest VanSky van-travel suitability score today.",
+      inputSchema: listVanSkyTopInput,
+      annotations: READ_ONLY,
+    },
     listVanSkyTop
   );
 
   // Events
-  server.tool(
+  server.registerTool(
     "list_events",
-    "List vanlife events: expos (Caravan Salon), festivals, meetups, forums, road trips. Filter by status, type, country, or free-text search.",
-    listEventsInput,
+    {
+      title: "List Vanlife Events",
+      description:
+        "List vanlife events: expos (Caravan Salon), festivals, meetups, forums, road trips. Filter by status, type, country, or free-text search.",
+      inputSchema: listEventsInput,
+      annotations: READ_ONLY,
+    },
     listEvents
   );
-  server.tool(
+  server.registerTool(
     "get_event",
-    "Get full details for a single vanlife event by its slug.",
-    getEventInput,
+    {
+      title: "Get Event Details",
+      description:
+        "Get full details for a single vanlife event by its slug.",
+      inputSchema: getEventInput,
+      annotations: READ_ONLY,
+    },
     getEvent
   );
 
   // Stories (news)
-  server.tool(
+  server.registerTool(
     "search_stories",
-    "Search aggregated vanlife news stories (7 languages, 400+ sources). Filter by search query, category, country, locale.",
-    searchStoriesInput,
+    {
+      title: "Search Vanlife News",
+      description:
+        "Search aggregated vanlife news stories (7 languages, 400+ sources). Filter by search query, category, country, locale.",
+      inputSchema: searchStoriesInput,
+      annotations: READ_ONLY,
+    },
     searchStories
   );
 
   // VanBasket (food price index)
-  server.tool(
+  server.registerTool(
     "compare_vanbasket",
-    "Compare food price index between two countries (world average = 100). Higher number = more expensive food.",
-    compareVanBasketInput,
+    {
+      title: "Compare Food Prices",
+      description:
+        "Compare food price index between two countries (world average = 100). Higher number = more expensive food.",
+      inputSchema: compareVanBasketInput,
+      annotations: READ_ONLY,
+    },
     compareVanBasket
   );
-  server.tool(
+  server.registerTool(
     "get_vanbasket",
-    "Get VanBasket food price index details for one country.",
-    getVanBasketInput,
+    {
+      title: "Get Food Price Index",
+      description:
+        "Get VanBasket food price index details for one country.",
+      inputSchema: getVanBasketInput,
+      annotations: READ_ONLY,
+    },
     getVanBasket
   );
 
   // Currency
-  server.tool(
+  server.registerTool(
     "get_currency_rate",
-    "Convert an amount between two currencies using live rates (150+ currencies, daily updates).",
-    getCurrencyRateInput,
+    {
+      title: "Convert Currency",
+      description:
+        "Convert an amount between two currencies using live rates (150+ currencies, daily updates).",
+      inputSchema: getCurrencyRateInput,
+      annotations: READ_ONLY,
+    },
     getCurrencyRate
   );
 
