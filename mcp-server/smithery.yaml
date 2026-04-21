@@ -1,0 +1,73 @@
+name: openvan-travel
+displayName: OpenVan Travel Data
+description: Free vanlife & RV travel data for AI agents — fuel prices (125+ countries), VanSky weather scores, VanBasket food price index, currency rates, events, news stories. 11 read-only tools. No auth. CC BY 4.0.
+version: 0.2.0
+license: MIT
+homepage: https://openvan.camp/ai
+repository:
+  type: git
+  url: https://github.com/Kopaev/openvan-camp-public-api
+  path: mcp-server
+author:
+  name: OpenVan.camp
+  email: hello@openvan.camp
+  url: https://openvan.camp
+
+keywords:
+  - vanlife
+  - rv
+  - motorhome
+  - travel
+  - fuel-prices
+  - weather
+  - currency
+  - food-index
+  - events
+  - openvan
+  - travel-data
+
+categories:
+  - travel
+  - data
+
+# Remote-hosted transport (преферред для web-клиентов и ChatGPT Apps SDK)
+remote:
+  type: streamable-http
+  url: https://mcp.openvan.camp/mcp
+
+# Local stdio транспорт (преферред для Claude Desktop / Cursor / Windsurf)
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      OPENVAN_API_URL:
+        type: string
+        default: https://openvan.camp
+        description: Base URL of the OpenVan.camp REST API.
+      OPENVAN_SOURCE:
+        type: string
+        default: mcp-server-smithery
+        description: Attribution tag appended to every API call as ?source=<tag>.
+  commandFunction: |-
+    (config) => ({
+      command: "npx",
+      args: ["-y", "@openvan/mcp-server"],
+      env: {
+        OPENVAN_API_URL: config.OPENVAN_API_URL || "https://openvan.camp",
+        OPENVAN_SOURCE: config.OPENVAN_SOURCE || "mcp-server-smithery"
+      }
+    })
+
+tools:
+  - get_fuel_prices
+  - compare_fuel_prices
+  - find_cheapest_fuel
+  - get_vansky_weather
+  - list_vansky_top
+  - list_events
+  - get_event
+  - search_stories
+  - compare_vanbasket
+  - get_vanbasket
+  - get_currency_rate

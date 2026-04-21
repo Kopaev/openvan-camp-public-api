@@ -1,0 +1,39 @@
+[Unit]
+Description=OpenVan MCP Server (Streamable HTTP)
+Documentation=https://openvan.camp/ai
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vanlife
+Group=vanlife
+WorkingDirectory=/home/vanlife/VanLife-Aggregator-laravel/mcp-server
+Environment=NODE_ENV=production
+Environment=OPENVAN_MCP_HOST=127.0.0.1
+Environment=OPENVAN_MCP_PORT=4800
+Environment=OPENVAN_API_URL=https://openvan.camp
+Environment=OPENVAN_SOURCE=mcp-server-sse
+ExecStart=/usr/bin/node /home/vanlife/VanLife-Aggregator-laravel/mcp-server/dist/sse.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=openvan-mcp-sse
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/vanlife/VanLife-Aggregator-laravel/mcp-server
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+
+[Install]
+WantedBy=multi-user.target
