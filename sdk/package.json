@@ -1,0 +1,58 @@
+{
+  "name": "@openvan/sdk",
+  "version": "1.0.0",
+  "description": "Official JavaScript/TypeScript SDK for OpenVan.camp — free vanlife/RV travel data: fuel prices, weather scores, food cost index, currency, events, news",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "vanlife",
+    "rv",
+    "motorhome",
+    "campervan",
+    "fuel-prices",
+    "travel",
+    "openvan",
+    "api",
+    "sdk",
+    "weather",
+    "currency",
+    "cost-of-living"
+  ],
+  "homepage": "https://openvan.camp/docs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kopaev/openvan-camp-public-api.git",
+    "directory": "sdk"
+  },
+  "bugs": {
+    "url": "mailto:hello@openvan.camp"
+  },
+  "author": "OpenVan.camp <hello@openvan.camp>",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.2"
+  }
+}
