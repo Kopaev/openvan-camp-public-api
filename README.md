@@ -7,6 +7,8 @@ Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index
 **CORS:** Enabled  
 **License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
+**JavaScript/TypeScript SDK:** [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) — `npm install @openvancamp/sdk`. Zero-config, typed, Node.js / browser / edge. [SDK docs →](./sdk/README.md)
+
 **MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — hosted at `https://mcp.openvan.camp/mcp`, also `npx -y mcp-remote https://mcp.openvan.camp/mcp` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md)
 
 **Custom GPT:** [OpenVan Travel Assistant](https://chatgpt.com/g/g-69e723ddf2f48191b828b461cd7f57e0-openvan-travel-assistant) — live in ChatGPT GPT Store.
@@ -391,9 +393,40 @@ This helps us understand how the data is being used and acknowledge active proje
 
 ---
 
+## JavaScript / TypeScript SDK
+
+```bash
+npm install @openvancamp/sdk
+# or: pnpm add @openvancamp/sdk
+```
+
+```ts
+import { OpenVan } from "@openvancamp/sdk";
+
+const ov = new OpenVan();
+
+// Cheapest diesel in Europe (top 5, EUR-normalized)
+const top5 = await ov.fuel.cheapest("diesel", 5);
+top5.forEach(c => console.log(c.country_name, c.prices.diesel, c.currency));
+
+// Is Portugal cheaper than Germany for van living?
+const comp = await ov.basket.compare("DE", "PT");
+console.log(`Portugal is ${Math.abs(comp.diff_percent)}% cheaper`);
+
+// Vanlife weather suitability — top 10 countries right now
+const weather = await ov.weather.top({ limit: 10 });
+```
+
+ESM-native, fully typed (TypeScript included), works in Node.js ≥ 18, browser, Cloudflare Workers, Deno, Bun. No API key.
+
+npm: [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) · [Full SDK docs →](./sdk/README.md)
+
+---
+
 ## Resources
 
 - **Interactive docs:** https://openvan.camp/docs
 - **OpenAPI 3.0 spec:** https://openvan.camp/docs.openapi
 - **Postman collection:** https://openvan.camp/docs.postman
+- **JavaScript SDK:** https://www.npmjs.com/package/@openvancamp/sdk
 - **Developer page:** https://openvan.camp/en/developers
