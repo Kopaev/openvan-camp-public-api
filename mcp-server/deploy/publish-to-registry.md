@@ -100,20 +100,20 @@ mcp-publisher publish
 
 ## Альтернативный путь (если будешь делать npm publish)
 
-Когда опубликуешь `@openvan/mcp-server` в npm, можно дополнить `server.json` блоком `packages`:
+Когда опубликуешь `@openvancamp/mcp-server` в npm, можно дополнить `server.json` блоком `packages`:
 
 ```json
 "packages": [
   {
     "registryType": "npm",
-    "identifier": "@openvan/mcp-server",
+    "identifier": "@openvancamp/mcp-server",
     "version": "0.2.1",
     "transport": { "type": "stdio" }
   }
 ]
 ```
 
-И вызвать `mcp-publisher publish` повторно. Тогда пользователи смогут как подключаться к нашему hosted endpoint (remotes), так и ставить локально через `npx -y @openvan/mcp-server` (packages). Оба варианта — одна запись в реестре.
+И вызвать `mcp-publisher publish` повторно. Тогда пользователи смогут как подключаться к нашему hosted endpoint (remotes), так и ставить локально через `npx -y @openvancamp/mcp-server` (packages). Оба варианта — одна запись в реестре.
 
 ## Полезные ссылки
 

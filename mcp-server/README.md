@@ -1,6 +1,6 @@
-# @openvan/mcp-server
+# @openvancamp/mcp-server
 
-[![npm version](https://img.shields.io/npm/v/@openvan/mcp-server.svg)](https://www.npmjs.com/package/@openvan/mcp-server)
+[![npm version](https://img.shields.io/npm/v/@openvancamp/mcp-server.svg)](https://www.npmjs.com/package/@openvancamp/mcp-server)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 **Official MCP server for [OpenVan.camp](https://openvan.camp)** — free, no-auth, machine-readable vanlife and RV travel data for AI agents.
@@ -39,7 +39,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) o
   "mcpServers": {
     "openvan": {
       "command": "npx",
-      "args": ["-y", "@openvan/mcp-server"]
+      "args": ["-y", "@openvancamp/mcp-server"]
     }
   }
 }
@@ -55,7 +55,7 @@ Add to your MCP config:
 {
   "openvan": {
     "command": "npx",
-    "args": ["-y", "@openvan/mcp-server"]
+    "args": ["-y", "@openvancamp/mcp-server"]
   }
 }
 ```
@@ -65,7 +65,7 @@ Add to your MCP config:
 The server speaks MCP over stdio. Run:
 
 ```bash
-npx -y @openvan/mcp-server
+npx -y @openvancamp/mcp-server
 ```
 
 ---
@@ -106,7 +106,7 @@ All tools are `readOnlyHint: true` and `openWorldHint: false`. Safe to allow by 
 The server is a thin TypeScript wrapper around the public OpenVan.camp REST API:
 
 ```
-MCP host ─► @openvan/mcp-server ─► https://openvan.camp/api/*
+MCP host ─► @openvancamp/mcp-server ─► https://openvan.camp/api/*
 ```
 
 Every outbound request automatically appends `?source=mcp-server` for attribution tracking and sets a descriptive User-Agent (`openvan-mcp/0.1.0`). This helps us credit MCP integrations in public reports and segment traffic.

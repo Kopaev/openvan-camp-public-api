@@ -52,7 +52,7 @@ startCommand:
   commandFunction: |-
     (config) => ({
       command: "npx",
-      args: ["-y", "@openvan/mcp-server"],
+      args: ["-y", "@openvancamp/mcp-server"],
       env: {
         OPENVAN_API_URL: config.OPENVAN_API_URL || "https://openvan.camp",
         OPENVAN_SOURCE: config.OPENVAN_SOURCE || "mcp-server-smithery"

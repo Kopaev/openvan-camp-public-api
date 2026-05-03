@@ -1,4 +1,4 @@
-# @openvan/sdk
+# @openvancamp/sdk
 
 Official JavaScript/TypeScript SDK for [OpenVan.camp](https://openvan.camp) — free vanlife/RV travel data API.
 
@@ -14,17 +14,17 @@ Official JavaScript/TypeScript SDK for [OpenVan.camp](https://openvan.camp) — 
 ## Install
 
 ```bash
-npm install @openvan/sdk
+npm install @openvancamp/sdk
 # or
-pnpm add @openvan/sdk
+pnpm add @openvancamp/sdk
 # or
-yarn add @openvan/sdk
+yarn add @openvancamp/sdk
 ```
 
 ## Quick start
 
 ```ts
-import { OpenVan } from "@openvan/sdk";
+import { OpenVan } from "@openvancamp/sdk";
 
 const ov = new OpenVan();
 
@@ -173,7 +173,7 @@ const { stories } = await ov.stories.list({
 ## Error handling
 
 ```ts
-import { OpenVan, OpenVanError } from "@openvan/sdk";
+import { OpenVan, OpenVanError } from "@openvancamp/sdk";
 
 try {
   const data = await ov.fuel.country("XX");
@@ -193,7 +193,7 @@ The SDK is ESM-native and works in any environment with `fetch` (browser, Node.j
 
 ```html
 <script type="module">
-  import { OpenVan } from "https://esm.sh/@openvan/sdk";
+  import { OpenVan } from "https://esm.sh/@openvancamp/sdk";
   const ov = new OpenVan();
   const de = await ov.fuel.country("DE");
   console.log(de.prices);
@@ -207,7 +207,7 @@ The SDK is ESM-native and works in any environment with `fetch` (browser, Node.j
 Use the data directly in Claude, Cursor, Windsurf, or any MCP-compatible AI:
 
 ```bash
-npx -y @openvan/mcp-server
+npx -y @openvancamp/mcp-server
 ```
 
 Or add to your Claude Desktop config:
@@ -216,7 +216,7 @@ Or add to your Claude Desktop config:
   "mcpServers": {
     "openvan": {
       "command": "npx",
-      "args": ["-y", "@openvan/mcp-server"]
+      "args": ["-y", "@openvancamp/mcp-server"]
     }
   }
 }
