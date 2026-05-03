@@ -42,7 +42,7 @@ top.forEach(c => console.log(c.country_name, c.score));
 
 // Is Portugal cheaper than Germany for van living?
 const comp = await ov.basket.compare("DE", "PT");
-console.log(`Portugal is ${((1 - comp.ratio) * 100).toFixed(0)}% cheaper`);
+console.log(`Portugal is ${Math.abs(comp.diff_percent)}% cheaper (€100 in DE ≈ €${comp.budget_100} in PT)`);
 
 // Currency conversion
 const usd = await ov.currency.convert(100, "EUR", "USD");
@@ -113,9 +113,11 @@ const usd = await ov.currency.convert(50, "EUR", "USD");
 | `.compare(from, to)` | `VanBasketCompareData` — ratio + both countries |
 
 ```ts
-// Compare Spain vs Mexico (for a €2000/month budget in Spain):
+// Compare Spain vs Mexico
 const comp = await ov.basket.compare("ES", "MX");
-console.log(`€2000 in Spain ≈ €${(2000 * comp.ratio).toFixed(0)} in Mexico`);
+// comp.diff_percent = how much cheaper/expensive MX is vs ES
+// comp.budget_100  = equivalent of €100 in ES when spending in MX
+console.log(`diff: ${comp.diff_percent}%, €100 in Spain ≈ €${comp.budget_100} in Mexico`);
 ```
 
 ---
