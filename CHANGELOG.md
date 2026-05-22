@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-05-22
+
+### Changed
+- **MCP server v0.2.3** — `server.json` description now explicitly mentions `openvan.camp` and links to `https://openvan.camp/en/developers`. Catalogs (Glama, Agenstry, PulseMCP, Smithery) render the description field, so this gives us a backlink from every downstream listing.
+
 ## 2026-04-08
 
 ### Added

@@ -1,8 +1,8 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Kopaev/openvan-travel",
-  "description": "Vanlife & RV travel data — fuel prices, weather, currency, events, news (free, 11 MCP tools)",
-  "version": "0.2.2",
+  "description": "Vanlife & RV travel data from openvan.camp — fuel prices (120+ countries), weather, currency, events, multilingual news (free, 11 MCP tools). Docs: https://openvan.camp/en/developers",
+  "version": "0.2.3",
   "repository": {
     "url": "https://github.com/Kopaev/openvan-camp-public-api",
     "source": "github"
