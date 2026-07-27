@@ -1,0 +1,8 @@
+node_modules
+dist
+deploy
+*.log
+.DS_Store
+.env
+smithery.yaml
+server.json

@@ -3,7 +3,7 @@
  * OpenVan MCP Server — stdio entry point.
  *
  * Used by Claude Desktop / Cursor / Windsurf / Continue when configured as
- *   { "command": "npx", "args": ["-y", "@openvan/mcp-server"] }
+ *   { "command": "npx", "args": ["-y", "@openvancamp/mcp-server"] }
  *
  * For remote HTTP/SSE (ChatGPT Apps SDK, web-hosted clients) see dist/sse.js
  * which serves the same createServer() over Streamable HTTP.

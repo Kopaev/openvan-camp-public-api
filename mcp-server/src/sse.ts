@@ -48,7 +48,7 @@ async function main() {
         "  GET  https://mcp.openvan.camp/mcp   (SSE stream)",
         "",
         "Local install (stdio):",
-        "  npx -y @openvan/mcp-server",
+        "  npx -y @openvancamp/mcp-server",
         "",
         "Docs: https://openvan.camp/ai",
         "Data: CC BY 4.0 — attribute OpenVan.camp",
