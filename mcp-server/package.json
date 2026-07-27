@@ -6,6 +6,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
+    "mcp-server": "dist/index.js",
     "openvan-mcp": "dist/index.js",
     "openvan-mcp-sse": "dist/sse.js"
   },
