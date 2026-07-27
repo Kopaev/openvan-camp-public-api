@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-07-27
+
+### Fixed
+- **MCP server v0.2.5** — `npx -y @openvancamp/mcp-server` now resolves a binary (added `mcp-server` bin alias). npm `0.2.3` and `0.2.4` were both published from trees with issues (missing bin alias, then a stale hardcoded `VERSION` constant in the User-Agent string) — both deprecated in favor of `0.2.5`.
+- Gallon-priced countries (US/EC/DO/HN/SV) now normalize to EUR/liter in `compare_fuel_prices` and `cheapest_fuel` tools.
+
+### Added
+- `mcp-server/Dockerfile` for Glama build evaluation.
+
 ## 2026-05-22
 
 ### Changed
