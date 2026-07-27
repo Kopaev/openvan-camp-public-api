@@ -51,6 +51,27 @@ function toEur(
   return priceLocal / rate;
 }
 
+const LITERS_PER_GALLON = 3.78541;
+
+/**
+ * Whether a unit string denotes US gallons. The fuel API reports prices per
+ * "liter" for most countries and per "gallon" for a handful (US, EC, DO, HN,
+ * SV).
+ */
+function isGallon(unit: string): boolean {
+  return unit.toLowerCase().includes("gal");
+}
+
+/**
+ * Normalize an EUR price (expressed in the country's native unit) to EUR per
+ * liter, so gallon-priced and liter-priced countries can be sorted and
+ * compared on the same scale. Returns NaN if the input is NaN.
+ */
+function toEurPerLiter(priceEur: number, unit: string): number {
+  if (isNaN(priceEur)) return NaN;
+  return isGallon(unit) ? priceEur / LITERS_PER_GALLON : priceEur;
+}
+
 async function fetchFuelAndRates() {
   const [fuelRaw, ratesRaw] = await Promise.all([
     apiGet("/api/fuel/prices"),
@@ -193,7 +214,8 @@ export async function compareFuelPrices({
   type Row = {
     c: FuelCountry;
     priceLocal: number | null | undefined;
-    priceEur: number; // NaN if conversion unavailable
+    priceEur: number; // EUR in the country's native unit; NaN if conversion unavailable
+    priceEurPerLiter: number; // EUR per liter — normalized basis for sorting/comparison
   };
 
   const rows: Row[] = country_codes
@@ -201,10 +223,12 @@ export async function compareFuelPrices({
     .filter((c): c is FuelCountry => Boolean(c))
     .map((c) => {
       const priceLocal = c.prices?.[fuel_type];
+      const priceEur = toEur(priceLocal, c.currency, rates);
       return {
         c,
         priceLocal,
-        priceEur: toEur(priceLocal, c.currency, rates),
+        priceEur,
+        priceEurPerLiter: toEurPerLiter(priceEur, c.unit),
       };
     })
     .filter((r) => r.priceLocal != null);
@@ -221,15 +245,16 @@ export async function compareFuelPrices({
     };
   }
 
-  // Sort by EUR price. Rows with NaN priceEur (currency not in rates table)
-  // go to the bottom and are flagged so the user sees them but isn't misled.
+  // Sort by EUR-per-liter so gallon-priced countries (US, EC, DO, HN, SV)
+  // compare on the same scale as liter-priced ones. Rows with NaN (currency
+  // not in rates table) go to the bottom and are flagged.
   rows.sort((a, b) => {
-    const aBad = isNaN(a.priceEur);
-    const bBad = isNaN(b.priceEur);
+    const aBad = isNaN(a.priceEurPerLiter);
+    const bBad = isNaN(b.priceEurPerLiter);
     if (aBad && !bBad) return 1;
     if (!aBad && bBad) return -1;
     if (aBad && bBad) return 0;
-    return a.priceEur - b.priceEur;
+    return a.priceEurPerLiter - b.priceEurPerLiter;
   });
 
   const table = rows
@@ -242,14 +267,14 @@ export async function compareFuelPrices({
       if (isNaN(r.priceEur)) {
         return `  ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ${local}  (⚠️ currency not in rates table)`;
       }
-      return `  ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ${local}  ≈ ${r.priceEur.toFixed(3)} EUR/${r.c.unit}`;
+      return `  ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ${local}  ≈ ${r.priceEurPerLiter.toFixed(3)} EUR/liter`;
     })
     .join("\n");
 
   const cheapest = rows[0];
-  const cheapestLine = isNaN(cheapest.priceEur)
+  const cheapestLine = isNaN(cheapest.priceEurPerLiter)
     ? `Cheapest (by local price only, EUR conversion unavailable): ${cheapest.c.country_name} at ${fmt(cheapest.priceLocal)} ${cheapest.c.currency}/${cheapest.c.unit}.`
-    : `Cheapest: ${cheapest.c.country_name} at ≈ ${cheapest.priceEur.toFixed(3)} EUR/${cheapest.c.unit}${cheapest.c.currency.toUpperCase() !== "EUR" ? ` (${fmt(cheapest.priceLocal)} ${cheapest.c.currency})` : ""}.`;
+    : `Cheapest: ${cheapest.c.country_name} at ≈ ${cheapest.priceEurPerLiter.toFixed(3)} EUR/liter${cheapest.c.currency.toUpperCase() !== "EUR" ? ` (${fmt(cheapest.priceLocal)} ${cheapest.c.currency}/${cheapest.c.unit})` : ""}.`;
 
   const footer = ratesUpdatedAt ? `\nCurrency rates: openvan.camp (updated ${ratesUpdatedAt}).` : "";
 
@@ -257,7 +282,7 @@ export async function compareFuelPrices({
     content: [
       {
         type: "text" as const,
-        text: `${fuel_type} price comparison (cheapest first, sorted by EUR-equivalent):\n\n${table}\n\n${cheapestLine}${footer}`,
+        text: `${fuel_type} price comparison (cheapest first, sorted by EUR per liter):\n\n${table}\n\n${cheapestLine}${footer}`,
       },
     ],
   };
@@ -300,14 +325,16 @@ export async function findCheapestFuel({
     .filter((c) => region === "world" || c.region === region)
     .map((c) => {
       const priceLocal = c.prices?.[fuel_type];
+      const priceEur = toEur(priceLocal, c.currency, rates);
       return {
         c,
         priceLocal,
-        priceEur: toEur(priceLocal, c.currency, rates),
+        priceEur,
+        priceEurPerLiter: toEurPerLiter(priceEur, c.unit),
       };
     })
-    .filter((r) => r.priceLocal != null && !isNaN(r.priceEur))
-    .sort((a, b) => a.priceEur - b.priceEur)
+    .filter((r) => r.priceLocal != null && !isNaN(r.priceEurPerLiter))
+    .sort((a, b) => a.priceEurPerLiter - b.priceEurPerLiter)
     .slice(0, limit);
 
   if (rows.length === 0) {
@@ -329,11 +356,11 @@ export async function findCheapestFuel({
       if (isEur) {
         return `  ${i + 1}. ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ${local}`;
       }
-      return `  ${i + 1}. ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ≈ ${r.priceEur.toFixed(3)} EUR/${r.c.unit}  (${local})`;
+      return `  ${i + 1}. ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ≈ ${r.priceEurPerLiter.toFixed(3)} EUR/liter  (${local})`;
     })
     .join("\n");
 
-  const footer = ratesUpdatedAt ? `\n\nSorted by EUR-equivalent. Currency rates: openvan.camp (updated ${ratesUpdatedAt}).` : "";
+  const footer = ratesUpdatedAt ? `\n\nSorted by EUR per liter. Currency rates: openvan.camp (updated ${ratesUpdatedAt}).` : "";
 
   return {
     content: [
