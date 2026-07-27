@@ -5,7 +5,7 @@ Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index
 **Base URL:** `https://openvan.camp`  
 **Auth:** None required  
 **CORS:** Enabled  
-**License:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+**License:** data is [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); code in this repository (SDK, MCP server, examples) is [MIT](./LICENSE)
 
 **JavaScript/TypeScript SDK:** [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) — `npm install @openvancamp/sdk`. Zero-config, typed, Node.js / browser / edge. [SDK docs →](./sdk/README.md)
 
