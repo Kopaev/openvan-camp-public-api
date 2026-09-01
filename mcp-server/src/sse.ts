@@ -21,6 +21,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 
 import { VERSION } from "./config.js";
 import { createServer } from "./server.js";
+import { extractToolCalls, logToolCall } from "./telemetry.js";
 
 const HOST = process.env.OPENVAN_MCP_HOST ?? "127.0.0.1";
 const PORT = Number(process.env.OPENVAN_MCP_PORT ?? 4800);
@@ -67,6 +68,34 @@ async function main() {
       enableJsonResponse: true,
     });
 
+    // Telemetry — какие инструменты вызвал клиент (имя + аргументы), кто он
+    // (User-Agent) и откуда (IP). Снимаем ДО handleRequest, логируем ПОСЛЕ.
+    const toolCalls = extractToolCalls(req.body);
+    const clientUa = req.headers["user-agent"];
+    const forwardedFor = req.headers["x-forwarded-for"];
+    const clientIp =
+      (Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor)
+        ?.split(",")[0]
+        ?.trim() || req.socket.remoteAddress || undefined;
+    const startedAt = Date.now();
+
+    const recordToolCalls = (ok: boolean): void => {
+      if (toolCalls.length === 0) {
+        return;
+      }
+      const durationMs = Date.now() - startedAt;
+      for (const call of toolCalls) {
+        logToolCall({
+          tool: call.tool,
+          arguments: call.args,
+          client_ua: clientUa,
+          ip: clientIp,
+          ok,
+          duration_ms: durationMs,
+        });
+      }
+    };
+
     // Clean up server/transport when the client disconnects.
     res.on("close", () => {
       void transport.close();
@@ -76,7 +105,9 @@ async function main() {
     try {
       await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
+      recordToolCalls(res.statusCode < 400);
     } catch (err) {
+      recordToolCalls(false);
       process.stderr.write(
         `[openvan-mcp-sse] handler error: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`
       );

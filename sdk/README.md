@@ -2,7 +2,7 @@
 
 Official JavaScript/TypeScript SDK for [OpenVan.camp](https://openvan.camp) — free vanlife/RV travel data API.
 
-- **Fuel prices** — real-time retail prices for 121 countries (gasoline, diesel, LPG, E85) from 200+ government sources
+- **Fuel prices** — real-time retail prices for 169 countries (gasoline, diesel, LPG, E85) from 200+ government sources
 - **Weather scores** — vanlife-specific suitability (0–100): van comfort, sleep conditions, solar yield, driving safety
 - **Food cost index** — cost-of-living comparison across 92 countries vs. a world baseline
 - **Currency rates** — 150+ currencies, EUR-based, updated daily
@@ -72,7 +72,7 @@ const ov = new OpenVan({
 
 | Method | Returns |
 |---|---|
-| `.prices()` | `Record<string, FuelCountry>` — all 121 countries |
+| `.prices()` | `Record<string, FuelCountry>` — all 169 countries |
 | `.country(code)` | `FuelCountry` — single country by ISO code |
 | `.cheapest(fuelType?, limit?)` | `FuelCountry[]` — sorted cheapest-first |
 

@@ -26,6 +26,38 @@ const RatesResponseSchema = z.object({
 
 type FuelCountry = z.infer<typeof FuelCountrySchema>;
 
+const FUEL_TYPES = [
+  "gasoline_regular",
+  "gasoline",
+  "gasoline_premium",
+  "gasoline_super",
+  "diesel_regular",
+  "diesel",
+  "diesel_premium",
+  "lpg",
+  "cng",
+  "e85",
+  "kerosene",
+  "premium",
+] as const;
+
+type FuelType = (typeof FUEL_TYPES)[number];
+
+const FUEL_TYPE_LABELS: Record<FuelType, string> = {
+  gasoline_regular: "Gasoline regular",
+  gasoline: "Gasoline",
+  gasoline_premium: "Gasoline premium",
+  gasoline_super: "Gasoline super",
+  diesel_regular: "Diesel regular",
+  diesel: "Diesel",
+  diesel_premium: "Diesel premium",
+  lpg: "LPG",
+  cng: "CNG",
+  e85: "E85",
+  kerosene: "Kerosene",
+  premium: "Premium",
+};
+
 // ------------------------------------------------------------------
 // Currency normalization (shared by compare_* and find_cheapest_*)
 // ------------------------------------------------------------------
@@ -148,13 +180,10 @@ function formatCountry(c: FuelCountry, rates: Record<string, number>): string {
   const isEur = c.currency.toUpperCase() === "EUR";
   const lines = [
     `${c.country_name} (${c.country_code}) — prices per ${c.unit} in ${c.currency}${isEur ? "" : " (≈ EUR shown in brackets)"}`,
-    `  Gasoline: ${fmtPair(prices.gasoline, c.currency, rates, isEur)}`,
-    `  Diesel:   ${fmtPair(prices.diesel, c.currency, rates, isEur)}`,
-    `  LPG:      ${fmtPair(prices.lpg, c.currency, rates, isEur)}`,
   ];
-  if (prices.cng !== undefined) {
-    lines.push(`  CNG:      ${fmtPair(prices.cng, c.currency, rates, isEur)}`);
-  }
+  FUEL_TYPES.forEach((fuelType) => {
+    lines.push(`  ${FUEL_TYPE_LABELS[fuelType].padEnd(17)} ${fmtPair(prices[fuelType], c.currency, rates, isEur)}`);
+  });
   if (c.fetched_at) lines.push(`  Updated:  ${c.fetched_at}`);
   if (c.sources?.length) lines.push(`  Sources:  ${c.sources.join(", ")}`);
   return lines.join("\n");
@@ -197,9 +226,9 @@ export const compareFuelPricesInput = {
     .max(10)
     .describe("Array of 2-10 ISO 3166-1 alpha-2 country codes to compare."),
   fuel_type: z
-    .enum(["gasoline", "diesel", "lpg", "cng"])
+    .enum(FUEL_TYPES)
     .default("diesel")
-    .describe("Fuel type to compare."),
+    .describe("Fuel type to compare. Uses the same keys as /api/fuel/prices prices."),
 };
 
 export async function compareFuelPrices({
@@ -207,7 +236,7 @@ export async function compareFuelPrices({
   fuel_type,
 }: {
   country_codes: string[];
-  fuel_type: "gasoline" | "diesel" | "lpg" | "cng";
+  fuel_type: FuelType;
 }) {
   const { fuel, rates, ratesUpdatedAt } = await fetchFuelAndRates();
 
@@ -298,9 +327,9 @@ export const findCheapestFuelInput = {
     .default("world")
     .describe("Region to search. Default: world (all countries)."),
   fuel_type: z
-    .enum(["gasoline", "diesel", "lpg", "cng"])
+    .enum(FUEL_TYPES)
     .default("diesel")
-    .describe("Fuel type."),
+    .describe("Fuel type. Uses the same keys as /api/fuel/prices prices."),
   limit: z
     .number()
     .int()
@@ -316,7 +345,7 @@ export async function findCheapestFuel({
   limit,
 }: {
   region: "europe" | "asia" | "africa" | "north_america" | "south_america" | "oceania" | "world";
-  fuel_type: "gasoline" | "diesel" | "lpg" | "cng";
+  fuel_type: FuelType;
   limit: number;
 }) {
   const { fuel, rates, ratesUpdatedAt } = await fetchFuelAndRates();

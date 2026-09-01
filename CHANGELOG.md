@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-01
+
+### Added
+- **Visa & border rules API** documented in `openapi.yaml`: `/api/visa/check`, `/api/visa/route`,
+  `/api/visa/passport/{code}`, `/api/visa/map/{code}`, `/api/visa/rank`, `/api/visa/vehicle/{place}`,
+  `/api/visa/history`. The endpoints have been live since July; only the published contract lagged.
+- **MCP server v0.3.0** — three new read-only tools: `check_visa_rules`, `get_route_visa_rules`,
+  `get_vehicle_import_rules` (14 tools total). Visa answers carry `confidence` and the source layer.
+- Also documented: `/api/news/search` (semantic search), `/api/news/digest`, `POST /api/route-cost`,
+  `/api/event/{slug}/articles`, `/api/vanbasket/countries/{code}`, `/api/vansky/weather/{code}`.
+
+### Changed
+- `openapi.yaml` is now generated from `https://openvan.camp/.well-known/openapi.json` — one source of
+  truth instead of three specs drifting apart. It listed 10 of 22 public endpoints before this.
+- Fuel coverage figures corrected across the docs: 121 → 169 countries.
+
 ## 2026-07-27
 
 ### Fixed

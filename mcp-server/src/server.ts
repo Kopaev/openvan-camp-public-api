@@ -30,8 +30,16 @@ import {
   getVanBasketInput,
 } from "./tools/vanbasket.js";
 import { getCurrencyRate, getCurrencyRateInput } from "./tools/currency.js";
+import {
+  checkVisaRules,
+  checkVisaRulesInput,
+  getRouteVisaRules,
+  getRouteVisaRulesInput,
+  getVehicleImportRules,
+  getVehicleImportRulesInput,
+} from "./tools/visa.js";
 
-// Все 11 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
+// Все 14 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
 // не пишет данные, не удаляет записи. Annotations транслируются в UI хостов
 // (ChatGPT: DEV > Приложения, Claude Desktop, Cursor) — без них SDK проставляет
 // MCP defaults (destructiveHint=true), и хосты помечают нас как "разрушительные".
@@ -57,7 +65,7 @@ export function createServer(): McpServer {
     {
       title: "Get Fuel Prices",
       description:
-        "Current retail fuel prices (gasoline, diesel, LPG, CNG) for 125+ countries. Pass country_code to get one country in detail; omit it for a summary list.",
+        "Current retail fuel prices for all API-supported countries. Supports the same price keys as /api/fuel/prices, including gasoline, diesel, LPG, CNG, E85, kerosene and grade variants. Pass country_code to get one country in detail; omit it for a summary list.",
       inputSchema: getFuelPricesInput,
       annotations: READ_ONLY,
     },
@@ -182,6 +190,41 @@ export function createServer(): McpServer {
       annotations: READ_ONLY,
     },
     getCurrencyRate
+  );
+
+  // Visa & border rules
+  server.registerTool(
+    "check_visa_rules",
+    {
+      title: "Check Visa Rules",
+      description:
+        "Entry rules for one passport and destination: entry mode, allowed length of stay, how the days are counted (per entry or in a rolling window), whether a visa run resets the counter, and temporary vehicle import. Answers carry a confidence level and source — pass those on instead of stating a rule as certain.",
+      inputSchema: checkVisaRulesInput,
+      annotations: READ_ONLY,
+    },
+    checkVisaRules
+  );
+  server.registerTool(
+    "get_route_visa_rules",
+    {
+      title: "Visa Rules For A Route",
+      description:
+        "Visa rules for every country of a route in one call, for up to 10 passports at once, plus the tightest leg of the route.",
+      inputSchema: getRouteVisaRulesInput,
+      annotations: READ_ONLY,
+    },
+    getRouteVisaRules
+  );
+  server.registerTool(
+    "get_vehicle_import_rules",
+    {
+      title: "Temporary Vehicle Import Rules",
+      description:
+        "Temporary admission rules for a foreign-plated vehicle in one country: allowed days, per entry or per window, carnet requirement, green card. A country without a rule we can stand behind returns nothing rather than a guess.",
+      inputSchema: getVehicleImportRulesInput,
+      annotations: READ_ONLY,
+    },
+    getVehicleImportRules
   );
 
   return server;

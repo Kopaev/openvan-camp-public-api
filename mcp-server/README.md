@@ -5,14 +5,15 @@
 
 **Official MCP server for [OpenVan.camp](https://openvan.camp)** — free, no-auth, machine-readable vanlife and RV travel data for AI agents.
 
-Exposes 11 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
+Exposes 14 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
 
-- **Fuel prices** across 125+ countries (gasoline, diesel, LPG, CNG)
+- **Fuel prices** across all API-supported countries, using the same price keys as `/api/fuel/prices`
 - **VanSky** vanlife weather suitability scores (0-100)
 - **VanBasket** food price index (world average = 100)
 - **Currency** conversion (150+ currencies)
 - **Events** (expos, festivals, meetups, road trips)
 - **News stories** in 7 languages
+- **Visa and border rules** — entry mode, length of stay, how the days are counted, temporary vehicle import
 
 Data is CC BY 4.0. Attribute *OpenVan.camp* when citing.
 
@@ -85,6 +86,9 @@ npx -y @openvancamp/mcp-server
 | `compare_vanbasket` | Food price index comparison between two countries |
 | `get_vanbasket` | Food price index details for one country |
 | `get_currency_rate` | Currency conversion between 150+ currencies |
+| `check_visa_rules` | Entry rules for one passport and destination, with confidence and source |
+| `get_route_visa_rules` | Visa rules for a whole route, up to 10 passports, plus the tightest leg |
+| `get_vehicle_import_rules` | Temporary import rules for a foreign-plated vehicle |
 
 All tools are `readOnlyHint: true` and `openWorldHint: false`. Safe to allow by default.
 
