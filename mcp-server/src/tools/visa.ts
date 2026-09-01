@@ -13,7 +13,8 @@ const StaySchema = z.object({
   visa_type: z.string().nullish(),
   max_continuous: z.number().nullish(),
   max_total: z.number().nullish(),
-  duration: z.number().nullish(),
+  // Строка ("full_year") наравне с числом дней — DE→GE отдаёт именно строку.
+  duration: z.union([z.number(), z.string()]).nullish(),
   window: z.string().nullish(),
   window_days: z.number().nullish(),
   visa_run: z.boolean().nullish(),
@@ -64,7 +65,11 @@ function stayLine(stay: z.infer<typeof StaySchema>): string {
     parts.push(`${stay.max_total} days in total`);
   }
   if (stay.duration && parts.length === 0) {
-    parts.push(`${stay.duration} days`);
+    parts.push(
+      typeof stay.duration === "number"
+        ? `${stay.duration} days`
+        : stay.duration.replace(/_/g, " ")
+    );
   }
   if (stay.window === "rolling" && stay.window_days) {
     parts.push(`counted in a rolling ${stay.window_days}-day window`);
@@ -148,11 +153,13 @@ export async function checkVisaRules({
   const parsed = CheckResponseSchema.safeParse(raw);
 
   if (!parsed.success) {
+    // Не «данных нет», а «ответ не разобран»: перепутать эти два случая значит
+    // сказать человеку, что правил въезда не существует, когда они есть.
     return {
       content: [
         {
           type: "text" as const,
-          text: `No visa data for ${passport} -> ${destination}.`,
+          text: `Could not read the visa answer for ${passport} -> ${destination}. Check https://openvan.camp/api/visa/check?passport=${passport}&destination=${destination} directly.`,
         },
       ],
       isError: true,
@@ -260,7 +267,10 @@ export async function getRouteVisaRules({
   if (!parsed.success) {
     return {
       content: [
-        { type: "text" as const, text: `No visa data for route ${countries}.` },
+        {
+          type: "text" as const,
+          text: `Could not read the visa answer for route ${countries}. Check https://openvan.camp/api/visa/route?t=${encodeURIComponent(countries)} directly.`,
+        },
       ],
       isError: true,
     };
@@ -319,7 +329,19 @@ export async function getVehicleImportRules({ country }: { country: string }) {
   });
   const parsed = VehicleResponseSchema.safeParse(raw);
 
-  if (!parsed.success || parsed.data.data.length === 0) {
+  if (!parsed.success) {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `Could not read the vehicle import answer for ${country}. Check https://openvan.camp/api/visa/vehicle/${encodeURIComponent(country)} directly.`,
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  if (parsed.data.data.length === 0) {
     return {
       content: [
         {
