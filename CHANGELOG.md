@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-09-27
+
+### Added
+- **License plates API**: `/api/plates`, `/api/plates/{code}`, `/api/plates/{code}/validate`,
+  `/api/plates/{code}/random`, `/api/plates/{code}/plate.svg`, `/api/plates/{code}/plate.png`.
+  Plate images are drawn by the same engine as openvan.camp (typeface as vector outlines, no fonts to
+  install); `custom=1` draws any text in the plate layout. `openapi.yaml` regenerated — spec 1.3.0, 28 paths.
+- **MCP server v0.4.0** — four new read-only tools: `list_license_plate_countries`,
+  `get_license_plate_country`, `check_license_plate`, `get_license_plate_image` (PNG inline + SVG/PNG
+  links), 18 tools total.
+
 ## 2026-09-01
 
 ### Added

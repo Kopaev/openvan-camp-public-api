@@ -6,11 +6,12 @@ info:
   title: OpenVan.camp AI Public API
   description: 'Curated read-only OpenAPI schema for AI agents. Use this API to retrieve current vanlife
     news stories, source articles, events, fuel prices, route fuel cost, visa and border rules (including
-    temporary vehicle import), currency rates, VanBasket food price index data, and VanSky weather suitability
-    data. No authentication is required. Data is CC BY 4.0 and should be attributed to OpenVan.camp. Rate
-    limit: 120 requests/minute per IP, except POST /api/route-cost at 30/minute (see X-RateLimit-Limit
-    and X-RateLimit-Remaining response headers). Pass `?source=<integration-domain>` for attribution tracking.'
-  version: 1.2.0
+    temporary vehicle import), currency rates, VanBasket food price index data, VanSky weather suitability
+    data, and license plates of the world (formats, region codes, validation, ready SVG/PNG plate images).
+    No authentication is required. Data is CC BY 4.0 and should be attributed to OpenVan.camp. Rate limit:
+    120 requests/minute per IP, except POST /api/route-cost at 30/minute (see X-RateLimit-Limit and X-RateLimit-Remaining
+    response headers). Pass `?source=<integration-domain>` for attribution tracking.'
+  version: 1.3.0
   termsOfService: https://openvan.camp/en/terms
   contact:
     name: OpenVan.camp
@@ -28,6 +29,9 @@ info:
       X-RateLimit-Remaining: Remaining requests in current window
     exceptions:
       POST /api/route-cost: 30 requests/minute
+      GET /api/plates/{code}/random: 60 requests/minute
+      GET /api/plates/{code}/plate.svg: 60 requests/minute
+      GET /api/plates/{code}/plate.png: 60 requests/minute
   x-attribution:
     required: false
     recommended: true
@@ -56,6 +60,9 @@ tags:
 - name: Visa
   description: 'Visa and border rules: entry mode, length of stay, counting window, temporary vehicle
     import.'
+- name: License Plates
+  description: 'License plates of the world: formats, region codes, validation and ready plate images
+    (SVG/PNG).'
 paths:
   /api/stories:
     get:
@@ -748,6 +755,268 @@ paths:
                 additionalProperties: true
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/plates:
+    get:
+      tags:
+      - License Plates
+      operationId: listLicensePlateCountries
+      summary: List countries with license plates
+      description: 'Countries whose license plates are available: international code, plate size, example
+        plate with image URLs, how the region is shown and the number of regions.'
+      parameters:
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Countries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicensePlatesCatalogResponse'
+  /api/plates/{code}:
+    get:
+      tags:
+      - License Plates
+      operationId: getLicensePlateCountry
+      summary: Get a country's license plate
+      description: Plate passport (standard, size, how to read the plate, history), every region with
+        its plate codes and ISO 3166-2 unit, sources, and the browser engine that draws the plate on your
+        own page.
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ISO 3166-1 alpha-2 country code, e.g. ru.
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        example: ru
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Country plate data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicensePlateCountryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/plates/{code}/validate:
+    get:
+      tags:
+      - License Plates
+      operationId: validateLicensePlate
+      summary: Validate a license plate
+      description: Checks a number against the country's format, normalizes look-alike letters and resolves
+        the region code to a region name.
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ISO 3166-1 alpha-2 country code, e.g. ru.
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        example: ru
+      - name: number
+        in: query
+        required: true
+        description: Plate number without the region; look-alike Latin letters are normalized (A123BC
+          → А123ВС on Russian plates).
+        schema:
+          type: string
+          maxLength: 32
+        example: A123BC
+      - name: region
+        in: query
+        description: Region code, if the country shows one on the plate.
+        schema:
+          type: string
+          maxLength: 32
+        example: '77'
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicensePlateValidateResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/plates/{code}/random:
+    get:
+      tags:
+      - License Plates
+      operationId: randomLicensePlate
+      summary: Random license plate
+      description: A random plate in the current format with a real region code, plus image URLs. Rate
+        limit 60 requests/minute.
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ISO 3166-1 alpha-2 country code, e.g. ru.
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        example: ru
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Random plate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicensePlateRandomResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/plates/{code}/plate.svg:
+    get:
+      tags:
+      - License Plates
+      operationId: getLicensePlateSvg
+      summary: License plate image (SVG)
+      description: 'The plate drawn exactly as on openvan.camp by the same engine: plate typeface as vector
+        outlines (no fonts to install), physical size in millimetres in the SVG. Embed with <img src>.
+        Available for countries whose plate typeface license allows redistribution (glyphs_license free
+        or sharealike). Rate limit 60 requests/minute.'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ISO 3166-1 alpha-2 country code, e.g. ru.
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        example: ru
+      - name: number
+        in: query
+        required: true
+        description: Plate number without the region; look-alike Latin letters are normalized (A123BC
+          → А123ВС on Russian plates).
+        schema:
+          type: string
+          maxLength: 32
+        example: A123BC
+      - name: region
+        in: query
+        description: Region code, if the country shows one on the plate.
+        schema:
+          type: string
+          maxLength: 32
+        example: '77'
+      - name: custom
+        in: query
+        description: 1 = draw any text (e.g. a name) in the plate layout instead of returning 422.
+        schema:
+          type: boolean
+          default: false
+      - name: v
+        in: query
+        description: Engine version from image URLs returned by the API. Images are cached as immutable;
+          a new engine version means a new URL.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: SVG image
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Plate typeface of this country may not be redistributed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Number does not match the country format (pass custom=1 to draw any text)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/plates/{code}/plate.png:
+    get:
+      tags:
+      - License Plates
+      operationId: getLicensePlatePng
+      summary: License plate image (PNG)
+      description: Same plate as the SVG endpoint, rasterized with a transparent background. Rate limit
+        60 requests/minute.
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ISO 3166-1 alpha-2 country code, e.g. ru.
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        example: ru
+      - name: number
+        in: query
+        required: true
+        description: Plate number without the region; look-alike Latin letters are normalized (A123BC
+          → А123ВС on Russian plates).
+        schema:
+          type: string
+          maxLength: 32
+        example: A123BC
+      - name: region
+        in: query
+        description: Region code, if the country shows one on the plate.
+        schema:
+          type: string
+          maxLength: 32
+        example: '77'
+      - name: custom
+        in: query
+        description: 1 = draw any text (e.g. a name) in the plate layout instead of returning 422.
+        schema:
+          type: boolean
+          default: false
+      - name: width
+        in: query
+        description: PNG width in pixels.
+        schema:
+          type: integer
+          minimum: 200
+          maximum: 2000
+          default: 800
+      - name: v
+        in: query
+        description: Engine version from image URLs returned by the API. Images are cached as immutable;
+          a new engine version means a new URL.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: PNG image
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Plate typeface of this country may not be redistributed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Number does not match the country format (pass custom=1 to draw any text)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   parameters:
     Locale:
@@ -1482,6 +1751,228 @@ components:
           nullable: true
         source:
           type: string
+    LicensePlate:
+      type: object
+      properties:
+        number:
+          type: string
+          example: С065МК
+        region:
+          type: string
+          example: '197'
+        formatted:
+          type: string
+          example: С065МК 197
+        image:
+          type: object
+          nullable: true
+          description: Image URLs; null if the plate typeface may not be redistributed.
+          properties:
+            svg:
+              type: string
+              format: uri
+            png:
+              type: string
+              format: uri
+    LicensePlateCountrySummary:
+      type: object
+      properties:
+        country_code:
+          type: string
+          example: RU
+        country_name:
+          type: string
+          example: Russia
+        intl_code:
+          type: string
+          nullable: true
+          example: RUS
+        region_marking:
+          type: string
+          description: How the region appears on the plate.
+          enum:
+          - none
+          - prefix_letters
+          - prefix_digits
+          - suffix_digits
+          - separate_field
+          - text_name
+          - mixed
+          - legacy_only
+        size_mm:
+          type: array
+          items:
+            type: number
+          example:
+          - 520
+          - 112
+        example:
+          $ref: '#/components/schemas/LicensePlate'
+        regions_count:
+          type: integer
+          example: 96
+        glyphs_license:
+          type: string
+          enum:
+          - free
+          - sharealike
+          - restricted
+          description: License of the plate typeface; images and engine are served for free and sharealike.
+        url:
+          type: string
+          format: uri
+    LicensePlateRegion:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Moscow
+        iso3166_2:
+          type: string
+          nullable: true
+          example: RU-MOW
+        codes:
+          allOf:
+          - type: array
+            items:
+              type: string
+          example:
+          - '77'
+          - '97'
+          - '99'
+          - '177'
+        legacy_codes:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+          nullable: true
+    LicensePlateCountry:
+      allOf:
+      - $ref: '#/components/schemas/LicensePlateCountrySummary'
+      - type: object
+        properties:
+          standard:
+            type: string
+            nullable: true
+          description:
+            type: string
+            nullable: true
+          history:
+            type: string
+            nullable: true
+          regions:
+            type: array
+            items:
+              $ref: '#/components/schemas/LicensePlateRegion'
+          sources:
+            type: array
+            items:
+              type: string
+          reviewed_at:
+            type: string
+            format: date
+            nullable: true
+          engine:
+            type: object
+            nullable: true
+            description: 'Browser engine: load scripts in order, then Plates.render(code, number, region).'
+            properties:
+              scripts:
+                type: array
+                items:
+                  type: string
+                  format: uri
+              code:
+                type: string
+              usage:
+                type: string
+    LicensePlatesCatalogResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LicensePlateCountrySummary'
+        meta:
+          type: object
+          properties:
+            api_version:
+              type: integer
+            total_countries:
+              type: integer
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    LicensePlateCountryResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/LicensePlateCountry'
+        meta:
+          type: object
+          properties:
+            api_version:
+              type: integer
+              example: 1
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    LicensePlateValidateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            valid:
+              type: boolean
+            number:
+              type: string
+            region:
+              type: string
+            region_name:
+              type: string
+              nullable: true
+            region_iso3166_2:
+              type: string
+              nullable: true
+            image:
+              type: object
+              properties:
+                svg:
+                  type: string
+                  format: uri
+                png:
+                  type: string
+                  format: uri
+        meta:
+          type: object
+          properties:
+            api_version:
+              type: integer
+              example: 1
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    LicensePlateRandomResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/LicensePlate'
+        meta:
+          type: object
+          properties:
+            api_version:
+              type: integer
+              example: 1
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
     ErrorResponse:
       type: object
       properties:

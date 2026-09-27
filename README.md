@@ -1,6 +1,6 @@
 # OpenVan.camp Public API
 
-Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index, vanlife events, and news stories — all in one place, no registration required.
+Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index, vanlife events, news stories, and license plates of the world — all in one place, no registration required.
 
 **Base URL:** `https://openvan.camp`  
 **Auth:** None required  
@@ -42,6 +42,8 @@ The OpenAPI spec at `/docs.openapi` is generated from the live codebase and is t
 | `GET /api/event/{slug}/articles` | Source articles linked to an event | — |
 | `GET /api/stories` | News stories aggregated from 200+ publishers | 8200+ stories |
 | `GET /api/story/{slug}` | Full story with all source articles and direct links | — |
+| `GET /api/plates` | License plates of the world: formats, region codes, example plates | growing |
+| `GET /api/plates/{code}/plate.svg` | Ready plate image (also `.png`) — drop into `<img src>` | — |
 
 ---
 
@@ -315,6 +317,42 @@ curl "https://openvan.camp/api/story/free-overnight-parking-netherlands?locale=e
 - `title` and `summary` are translated to the requested `locale`
 - `sources[].language` is always the **original publisher language**, regardless of `locale`
 - `sources[].original_url` is the direct link to the publisher article
+
+---
+
+## License Plates — `/api/plates/*`
+
+License plates of the world: plate formats, every region code grouped by region (with ISO 3166-2 units),
+validation, and the plate itself as an image. Images are drawn by the same engine as
+[openvan.camp/en/license-plates](https://openvan.camp/en/license-plates) — the plate typeface is inside
+as vector outlines, so there are **no fonts to install**.
+
+The simplest integration is a plain image:
+
+```html
+<img src="https://openvan.camp/api/plates/ru/plate.svg?number=A123BC&region=77" alt="A123BC 77">
+```
+
+- `plate.png?width=800` — PNG, 200–2000 px wide, transparent background
+- Look-alike Latin letters are normalized (`A123BC` → `А123ВС` on Russian plates)
+- A number outside the country format returns `422`; add `custom=1` to draw any text (e.g. a name)
+- Images are served `Cache-Control: public, max-age=31536000, immutable`; image URLs returned by the API
+  carry `v=<engine version>`, so an engine update arrives under a new URL
+
+```bash
+curl https://openvan.camp/api/plates                                        # countries
+curl "https://openvan.camp/api/plates/ru?locale=en"                         # format, regions, codes, engine
+curl "https://openvan.camp/api/plates/ru/validate?number=A123BC&region=799" # valid? which region?
+curl https://openvan.camp/api/plates/ru/random                              # random plate + image URLs
+```
+
+To draw plates in the browser yourself (e.g. an interactive generator), load the scripts listed in
+`data.engine.scripts` of `/api/plates/{code}` in order and call
+`Plates.render(code, number, region)` → `{svg}` (an SVG element) or `{error}`.
+
+Images and the engine are available for countries whose plate typeface may be redistributed
+(`glyphs_license`: `free` or `sharealike`); for the rest the data endpoints still work.
+Rate limit: 60 requests/minute for images and `/random`, 120 for the rest.
 
 ---
 

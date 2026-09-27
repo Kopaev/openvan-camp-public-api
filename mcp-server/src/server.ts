@@ -38,8 +38,18 @@ import {
   getVehicleImportRules,
   getVehicleImportRulesInput,
 } from "./tools/visa.js";
+import {
+  checkLicensePlate,
+  checkLicensePlateInput,
+  getLicensePlateCountry,
+  getLicensePlateCountryInput,
+  getLicensePlateImage,
+  getLicensePlateImageInput,
+  listLicensePlateCountries,
+  listLicensePlateCountriesInput,
+} from "./tools/plates.js";
 
-// Все 14 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
+// Все 18 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
 // не пишет данные, не удаляет записи. Annotations транслируются в UI хостов
 // (ChatGPT: DEV > Приложения, Claude Desktop, Cursor) — без них SDK проставляет
 // MCP defaults (destructiveHint=true), и хосты помечают нас как "разрушительные".
@@ -225,6 +235,51 @@ export function createServer(): McpServer {
       annotations: READ_ONLY,
     },
     getVehicleImportRules
+  );
+
+  // License plates of the world
+  server.registerTool(
+    "list_license_plate_countries",
+    {
+      title: "License Plate Countries",
+      description: "Countries whose license plates are available: international code, number of regions and an example plate.",
+      inputSchema: listLicensePlateCountriesInput,
+      annotations: READ_ONLY,
+    },
+    listLicensePlateCountries
+  );
+  server.registerTool(
+    "get_license_plate_country",
+    {
+      title: "License Plate Format And Region Codes",
+      description:
+        "How a country's license plate looks and reads (standard, size, format) and every region code on its plates, grouped by region — e.g. which region is 77 or 199 on Russian plates.",
+      inputSchema: getLicensePlateCountryInput,
+      annotations: READ_ONLY,
+    },
+    getLicensePlateCountry
+  );
+  server.registerTool(
+    "check_license_plate",
+    {
+      title: "Check A License Plate",
+      description:
+        "Validate a plate number against the country's format (look-alike letters are normalized) and say which region its code belongs to. Never identifies the owner or the vehicle's location.",
+      inputSchema: checkLicensePlateInput,
+      annotations: READ_ONLY,
+    },
+    checkLicensePlate
+  );
+  server.registerTool(
+    "get_license_plate_image",
+    {
+      title: "License Plate Image",
+      description:
+        "Draw a license plate as an image (PNG shown inline, plus SVG/PNG links) exactly as openvan.camp renders it. custom=true draws any text, e.g. a name, in the plate layout.",
+      inputSchema: getLicensePlateImageInput,
+      annotations: READ_ONLY,
+    },
+    getLicensePlateImage
   );
 
   return server;

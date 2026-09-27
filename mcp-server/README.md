@@ -5,7 +5,7 @@
 
 **Official MCP server for [OpenVan.camp](https://openvan.camp)** — free, no-auth, machine-readable vanlife and RV travel data for AI agents.
 
-Exposes 14 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
+Exposes 18 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
 
 - **Fuel prices** across all API-supported countries, using the same price keys as `/api/fuel/prices`
 - **VanSky** vanlife weather suitability scores (0-100)
@@ -14,6 +14,7 @@ Exposes 14 read-only tools via the [Model Context Protocol](https://modelcontext
 - **Events** (expos, festivals, meetups, road trips)
 - **News stories** in 7 languages
 - **Visa and border rules** — entry mode, length of stay, how the days are counted, temporary vehicle import
+- **License plates of the world** — formats, region codes, plate check, and the plate itself as an image
 
 Data is CC BY 4.0. Attribute *OpenVan.camp* when citing.
 
@@ -89,6 +90,10 @@ npx -y @openvancamp/mcp-server
 | `check_visa_rules` | Entry rules for one passport and destination, with confidence and source |
 | `get_route_visa_rules` | Visa rules for a whole route, up to 10 passports, plus the tightest leg |
 | `get_vehicle_import_rules` | Temporary import rules for a foreign-plated vehicle |
+| `list_license_plate_countries` | Countries with license plates: international code, regions, example plate |
+| `get_license_plate_country` | Plate format and every region code of one country |
+| `check_license_plate` | Validate a plate number and resolve its region code |
+| `get_license_plate_image` | The plate as an image (PNG inline + SVG/PNG links); any text with `custom` |
 
 All tools are `readOnlyHint: true` and `openWorldHint: false`. Safe to allow by default.
 
@@ -102,6 +107,7 @@ All tools are `readOnlyHint: true` and `openWorldHint: false`. Safe to allow by 
 - "Find upcoming vanlife festivals in Germany this summer."
 - "Convert 500 EUR to Turkish lira using today's rate."
 - "How expensive is food in Portugal vs Turkey?"
+- "Which Russian region is plate code 199? Show me a plate with it."
 
 ---
 
