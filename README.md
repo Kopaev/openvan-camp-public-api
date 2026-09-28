@@ -11,6 +11,8 @@ Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index
 
 **MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — hosted at `https://mcp.openvan.camp/mcp`, also `npx -y mcp-remote https://mcp.openvan.camp/mcp` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md)
 
+**Gemini CLI extension:** install this repository with `gemini extensions install https://github.com/Kopaev/openvan-camp-public-api`. The root [`gemini-extension.json`](./gemini-extension.json) connects Gemini CLI directly to the hosted OpenVan MCP server; no API key is required.
+
 **Custom GPT:** [OpenVan Travel Assistant](https://chatgpt.com/g/g-69e723ddf2f48191b828b461cd7f57e0-openvan-travel-assistant) — live in ChatGPT GPT Store.
 
 ---
