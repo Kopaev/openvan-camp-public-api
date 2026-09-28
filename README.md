@@ -1,6 +1,6 @@
 # OpenVan.camp Public API
 
-Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index, vanlife events, news stories, and license plates of the world — all in one place, no registration required.
+Free, no-auth API for vanlife data: fuel prices, route fuel cost, currency rates, food cost index, weather suitability scores, visa and vehicle-import rules, vanlife events, news stories, and license plates of the world — all in one place, no registration required.
 
 **Base URL:** `https://openvan.camp`  
 **Auth:** None required  
@@ -9,9 +9,9 @@ Free, no-auth API for vanlife data: fuel prices, currency rates, food cost index
 
 **JavaScript/TypeScript SDK:** [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) — `npm install @openvancamp/sdk`. Zero-config, typed, Node.js / browser / edge. [SDK docs →](./sdk/README.md)
 
-**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — hosted at `https://mcp.openvan.camp/mcp`, also `npx -y mcp-remote https://mcp.openvan.camp/mcp` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md)
+**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 18 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai)
 
-**Gemini CLI extension:** install this repository with `gemini extensions install https://github.com/Kopaev/openvan-camp-public-api`. The root [`gemini-extension.json`](./gemini-extension.json) connects Gemini CLI directly to the hosted OpenVan MCP server; no API key is required.
+**Gemini CLI extension:** install this repository with `gemini extensions install https://github.com/openvancamp/openvan-camp-public-api`. The root [`gemini-extension.json`](./gemini-extension.json) connects Gemini CLI directly to the hosted OpenVan MCP server; no API key is required.
 
 **Custom GPT:** [OpenVan Travel Assistant](https://chatgpt.com/g/g-69e723ddf2f48191b828b461cd7f57e0-openvan-travel-assistant) — live in ChatGPT GPT Store.
 
@@ -34,17 +34,25 @@ The OpenAPI spec at `/docs.openapi` is generated from the live codebase and is t
 
 | Endpoint | Description | Coverage |
 |----------|-------------|----------|
-| `GET /api/fuel/prices` | Retail fuel prices (gasoline, diesel, LPG, E85) | 120+ countries |
+| `GET /api/fuel/prices` | Retail fuel prices (gasoline, diesel, LPG, E85) | 160+ countries |
+| `POST /api/route-cost` | Fuel cost for a route of 2–10 waypoints, per-country prices | — |
 | `GET /api/currency/rates` | Exchange rates relative to EUR | 150+ currencies |
 | `GET /api/vanbasket/countries` | Food price index relative to world average (100 = world avg) | 90+ countries |
 | `GET /api/vanbasket/compare?from=DE&to=TR` | Compare food costs between two countries | — |
 | `GET /api/vanbasket/countries/{code}` | Single country + historical snapshots | — |
-| `GET /api/events` | Vanlife events: expos, festivals, meetups, road trips | 695 events |
+| `GET /api/vansky/weather` | Vanlife weather suitability scores (0–100) with 7-day forecast | 160+ countries |
+| `GET /api/vansky/weather/{code}` | One country, with marine and solar data | — |
+| `GET /api/visa/check?passport=RU&destination=TR` | Entry rules: entry mode, length of stay, how days are counted, vehicle import | 199 destinations |
+| `GET /api/visa/route?t=RU,GE,TR&p=RU` | Visa rules for a whole route, up to 10 passports | — |
+| `GET /api/visa/passport/{code}` | All destinations for one passport | — |
+| `GET /api/visa/vehicle/{place}` | Temporary vehicle import rules for a country | — |
+| `GET /api/events` | Vanlife events: expos, festivals, meetups, road trips | 1,100+ events |
 | `GET /api/event/{slug}` | Full event details with geo coordinates | — |
 | `GET /api/event/{slug}/articles` | Source articles linked to an event | — |
-| `GET /api/stories` | News stories aggregated from 200+ publishers | 8200+ stories |
+| `GET /api/stories` | News stories aggregated from 200+ publishers | 31,000+ stories |
 | `GET /api/story/{slug}` | Full story with all source articles and direct links | — |
-| `GET /api/plates` | License plates of the world: formats, region codes, example plates | growing |
+| `GET /api/news/search?q=...` | Semantic search over stories | — |
+| `GET /api/plates` | License plates of the world: formats, region codes, example plates | 199 countries |
 | `GET /api/plates/{code}/plate.svg` | Ready plate image (also `.png`) — drop into `<img src>` | — |
 
 ---
@@ -470,3 +478,4 @@ npm: [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) · [Fu
 - **Postman collection:** https://openvan.camp/docs.postman
 - **JavaScript SDK:** https://www.npmjs.com/package/@openvancamp/sdk
 - **Developer page:** https://openvan.camp/en/developers
+- **For AI agents (MCP, Custom GPT, llms.txt):** https://openvan.camp/ai

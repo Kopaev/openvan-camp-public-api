@@ -1,6 +1,6 @@
 {
   "name": "@openvancamp/sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Official JavaScript/TypeScript SDK for OpenVan.camp — free vanlife/RV travel data: fuel prices, weather scores, food cost index, currency, events, news",
   "license": "MIT",
   "type": "module",
@@ -41,7 +41,7 @@
   "homepage": "https://openvan.camp/docs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Kopaev/openvan-camp-public-api.git",
+    "url": "https://github.com/openvancamp/openvan-camp-public-api.git",
     "directory": "sdk"
   },
   "bugs": {

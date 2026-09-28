@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-28
+
+### Changed
+- **Repository moved** to `github.com/openvancamp/openvan-camp-public-api`. The old
+  `github.com/Kopaev/openvan-camp-public-api` URL redirects, so existing clones and links keep working.
+- **MCP server v0.4.1** and **SDK v1.0.3** — repository URL updated; no functional changes.
+  The MCP registry name stays `io.github.Kopaev/openvan-travel`.
+- `smithery.yaml` brought up to date: 18 tools, `@openvancamp/mcp-server`.
+- README: endpoint table now lists route cost, weather, visa rules and news search; coverage numbers refreshed.
+
 ## 2026-09-27
 
 ### Added

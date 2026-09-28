@@ -1,12 +1,12 @@
 name: openvan-travel
 displayName: OpenVan Travel Data
-description: Free vanlife & RV travel data for AI agents — fuel prices (125+ countries), VanSky weather scores, VanBasket food price index, currency rates, events, news stories. 11 read-only tools. No auth. CC BY 4.0.
-version: 0.2.0
+description: Free vanlife & RV travel data for AI agents — fuel prices (160+ countries), VanSky weather scores, VanBasket food price index, currency rates, events, news stories, visa and vehicle-import rules, license plates of the world. 18 read-only tools. No auth. CC BY 4.0.
+version: 0.4.1
 license: MIT
 homepage: https://openvan.camp/ai
 repository:
   type: git
-  url: https://github.com/Kopaev/openvan-camp-public-api
+  url: https://github.com/openvancamp/openvan-camp-public-api
   path: mcp-server
 author:
   name: OpenVan.camp
@@ -71,3 +71,10 @@ tools:
   - compare_vanbasket
   - get_vanbasket
   - get_currency_rate
+  - check_visa_rules
+  - get_route_visa_rules
+  - get_vehicle_import_rules
+  - list_license_plate_countries
+  - get_license_plate_country
+  - check_license_plate
+  - get_license_plate_image

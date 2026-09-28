@@ -231,4 +231,4 @@ Or add to your Claude Desktop config:
 Data is licensed under **CC BY 4.0** — please attribute **OpenVan.camp** when using publicly.  
 SDK code is **MIT**.
 
-[API Docs](https://openvan.camp/docs) · [GitHub](https://github.com/Kopaev/openvan-camp-public-api) · [hello@openvan.camp](mailto:hello@openvan.camp)
+[API Docs](https://openvan.camp/docs) · [GitHub](https://github.com/openvancamp/openvan-camp-public-api) · [hello@openvan.camp](mailto:hello@openvan.camp)

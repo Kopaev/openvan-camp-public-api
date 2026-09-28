@@ -14,7 +14,7 @@
 - ✅ [`mcp-server/server.json`](../server.json) — registry metadata (валидирована против [официальной схемы](https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json))
 - ✅ `mcpName` в `package.json` = `io.github.Kopaev/openvan-travel`
 - ✅ Публичный HTTPS endpoint `https://mcp.openvan.camp/mcp`
-- ✅ Публичный GitHub репо `Kopaev/openvan-camp-public-api`
+- ✅ Публичный GitHub репо `openvancamp/openvan-camp-public-api` (до 2026-09-28 — `Kopaev/…`, старый адрес редиректит; namespace реестра остаётся `io.github.Kopaev`)
 
 ## Что сделать (на твоей Mac, ~10 минут)
 
@@ -37,7 +37,7 @@ sudo mv mcp-publisher /usr/local/bin/
 
 ```bash
 cd ~
-git clone git@github.com:Kopaev/openvan-camp-public-api.git
+git clone git@github.com:openvancamp/openvan-camp-public-api.git
 cd openvan-camp-public-api/mcp-server
 cat server.json    # убедись что файл есть
 ```

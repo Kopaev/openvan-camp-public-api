@@ -119,7 +119,7 @@ The server is a thin TypeScript wrapper around the public OpenVan.camp REST API:
 MCP host ─► @openvancamp/mcp-server ─► https://openvan.camp/api/*
 ```
 
-Every outbound request automatically appends `?source=mcp-server` for attribution tracking and sets a descriptive User-Agent (`openvan-mcp/0.1.0`). This helps us credit MCP integrations in public reports and segment traffic.
+Every outbound request automatically appends `?source=mcp-server` for attribution tracking and sets a descriptive User-Agent (`openvan-mcp/<version>`). This helps us credit MCP integrations in public reports and segment traffic.
 
 ### Configuration
 
@@ -137,7 +137,7 @@ Environment variables (optional):
 ## Development
 
 ```bash
-git clone https://github.com/Kopaev/openvan-camp-public-api.git
+git clone https://github.com/openvancamp/openvan-camp-public-api.git
 cd openvan-camp-public-api/mcp-server
 npm install
 npm run build
