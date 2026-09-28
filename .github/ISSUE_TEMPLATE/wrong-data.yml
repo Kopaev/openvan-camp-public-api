@@ -1,0 +1,23 @@
+name: Wrong data
+description: A fuel price, visa rule, plate format or other value is wrong or outdated
+labels: ["data"]
+body:
+  - type: input
+    id: endpoint
+    attributes:
+      label: Endpoint or page
+      placeholder: /api/fuel/prices?country=DE or https://openvan.camp/en/...
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong
+      description: The value you got and the correct value.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Link to an official or reliable source for the correct value.

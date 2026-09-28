@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: API documentation
+    url: https://openvan.camp/docs
+    about: Interactive docs with "Try it out"
+  - name: Questions and ideas
+    url: https://github.com/openvancamp/openvan-camp-public-api/discussions
+    about: Ask and discuss in Discussions

@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this data or software, please cite it as below. Data is licensed CC BY 4.0 — attribute OpenVan.camp."
+title: "OpenVan.camp Public API: open vanlife and RV travel data"
+abstract: >-
+  Free, no-auth REST API, MCP server and JavaScript SDK with open travel data for vanlife and RV
+  travelers: retail fuel prices for 160+ countries, visa and temporary vehicle-import rules,
+  weather suitability scores, food cost index, license plates of the world, currency rates,
+  vanlife events and multilingual news.
+type: software
+authors:
+  - name: "OpenVan.camp"
+    website: "https://openvan.camp"
+    email: "hello@openvan.camp"
+repository-code: "https://github.com/openvancamp/openvan-camp-public-api"
+url: "https://openvan.camp/en/developers"
+license: MIT
+keywords:
+  - vanlife
+  - rv
+  - campervan
+  - fuel prices
+  - visa rules
+  - license plates
+  - open data
+  - mcp server
+  - travel api
