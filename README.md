@@ -9,7 +9,7 @@ Free, no-auth API for vanlife data: fuel prices, route fuel cost, currency rates
 
 **JavaScript/TypeScript SDK:** [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) — `npm install @openvancamp/sdk`. Zero-config, typed, Node.js / browser / edge. [SDK docs →](./sdk/README.md)
 
-**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 18 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai)
+**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 18 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
 
 **Gemini CLI extension:** install this repository with `gemini extensions install https://github.com/openvancamp/openvan-camp-public-api`. The root [`gemini-extension.json`](./gemini-extension.json) connects Gemini CLI directly to the hosted OpenVan MCP server; no API key is required.
 
@@ -22,7 +22,7 @@ Free, no-auth API for vanlife data: fuel prices, route fuel cost, currency rates
 | Resource | Purpose |
 |----------|---------|
 | This README | Quick overview and code examples |
-| [`/docs`](https://openvan.camp/docs) | Interactive documentation with "Try it out" |
+| [`/docs`](https://openvan.camp/docs?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) | Interactive documentation with "Try it out" |
 | [`/docs.openapi`](https://openvan.camp/docs.openapi) | Full OpenAPI 3.0 contract (always up to date) |
 | [`/docs.postman`](https://openvan.camp/docs.postman) | Postman collection |
 
@@ -334,7 +334,7 @@ curl "https://openvan.camp/api/story/free-overnight-parking-netherlands?locale=e
 
 License plates of the world: plate formats, every region code grouped by region (with ISO 3166-2 units),
 validation, and the plate itself as an image. Images are drawn by the same engine as
-[openvan.camp/en/license-plates](https://openvan.camp/en/license-plates) — the plate typeface is inside
+[openvan.camp/en/license-plates](https://openvan.camp/en/license-plates?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) — the plate typeface is inside
 as vector outlines, so there are **no fonts to install**.
 
 The simplest integration is a plain image:
@@ -473,9 +473,19 @@ npm: [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) · [Fu
 
 ## Resources
 
-- **Interactive docs:** https://openvan.camp/docs
+- **Interactive docs:** [openvan.camp/docs](https://openvan.camp/docs?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
 - **OpenAPI 3.0 spec:** https://openvan.camp/docs.openapi
 - **Postman collection:** https://openvan.camp/docs.postman
 - **JavaScript SDK:** https://www.npmjs.com/package/@openvancamp/sdk
-- **Developer page:** https://openvan.camp/en/developers
-- **For AI agents (MCP, Custom GPT, llms.txt):** https://openvan.camp/ai
+- **Developer page:** [openvan.camp/en/developers](https://openvan.camp/en/developers?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
+- **For AI agents (MCP, Custom GPT, llms.txt):** [openvan.camp/ai](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
+
+### The same data on the site
+
+[Fuel prices by country](https://openvan.camp/en/tools/fuel-prices?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) ·
+[Passport & visa checker](https://openvan.camp/en/tools/passport?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) ·
+[Roadbook trip planner](https://openvan.camp/en/roadbook?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) ·
+[VanSky weather](https://openvan.camp/en/vansky?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) ·
+[Food cost index](https://openvan.camp/en/tools/vanbasket?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) ·
+[Vanlife events](https://openvan.camp/en/events?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo) ·
+[Vanlife news](https://openvan.camp/en/news?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
