@@ -9,6 +9,17 @@
   EUR range with a `partial` flag. `openapi.yaml` regenerated — spec 1.4.0, 31 paths.
 - **MCP server v0.5.0** — two new read-only tools: `get_toll_rates`, `estimate_route_tolls`, 20 tools total.
 
+### Fixed (MCP server v0.5.1)
+- **Fuel prices**: new `currencies` map — the currency of each grade. Venezuela prices diesel in USD and
+  gasoline in VES; converting every grade with the country `currency` gave €376/l instead of €0.44.
+  MCP fuel tools now convert per grade.
+- **Toll route estimate**: a country with no toll data is reported in `unknown_countries` (with
+  `partial: true`) instead of a confident €0; new `unchecked_countries`, `route_countries` and `points`
+  (where each place name resolved). Ambiguous names now resolve to the largest city (Athens → Greece).
+  Clear `422`/`503` errors with a `message`.
+- **MCP**: every tool answer carries the CC BY 4.0 attribution; API error messages reach the agent
+  instead of a bare `HTTP 404`.
+
 ## 2026-09-28
 
 ### Changed

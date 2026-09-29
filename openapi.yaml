@@ -250,6 +250,15 @@ paths:
       - kerosene
       - premium
       parameters:
+      - name: country
+        in: query
+        required: false
+        description: 'ISO 3166-1 alpha-2 code: return one country only. Unknown code returns 404.'
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 2
+        example: TR
       - $ref: '#/components/parameters/Source'
       responses:
         '200':
@@ -258,6 +267,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FuelPricesResponse'
+        '404':
+          description: No fuel prices for this country code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/currency/rates:
     get:
       tags:
@@ -500,6 +515,13 @@ paths:
                 additionalProperties: true
         '422':
           $ref: '#/components/responses/ValidationError'
+          description: Validation error, unknown currency, or a waypoint could not be geocoded
+        '502':
+          description: No road route could be built between the waypoints (e.g. across an ocean)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/tolls/countries:
     get:
       tags:
@@ -620,13 +642,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/TollRouteResponse'
         '422':
-          description: Validation error or a place name could not be geocoded
+          description: Validation error, a place name could not be geocoded (error=geocode), or no road
+            route exists (error=route_not_found, too_far, closed_border, same_point)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '503':
-          description: Routing or toll probe temporarily unavailable, retry later
+          description: Routing temporarily unavailable (error=routing_unavailable), retry later
           content:
             application/json:
               schema:
@@ -799,6 +822,12 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        '422':
+          description: Invalid `since` date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/visa/passport/{code}:
     get:
       tags:
@@ -1512,12 +1541,31 @@ components:
         currency:
           type: string
           example: EUR
+          description: 'Currency of the country''s first price row. A country can price grades in different
+            currencies (Venezuela: diesel in USD, gasoline in VES) — always convert each grade with `currencies[grade]`.'
+        currencies:
+          type: object
+          additionalProperties:
+            type: string
+          description: Currency of each fuel grade (ISO 4217). Use it, not `currency`, to convert a grade's
+            price.
+          example:
+            diesel: USD
+            gasoline: VES
         local_currency:
           type: string
           nullable: true
         unit:
           type: string
           example: liter
+        units:
+          type: object
+          additionalProperties:
+            type: string
+          description: Unit of each fuel grade (liter, gallon, kg, m3). CNG/LPG may be per kg or m3.
+          example:
+            diesel: liter
+            cng: kg
         prices:
           type: object
           description: 'Current price map. Canonical keys: gasoline_regular, gasoline, gasoline_premium,
@@ -2201,6 +2249,8 @@ components:
           - vignette
           - free
           - null
+          description: 'Payment system for a passenger car. Heavier classes can differ (Poland and Belarus:
+            free for cars, per-km for over 3.5 t) — read rates[].system_type per vehicle_class.'
         rates:
           type: array
           items:
@@ -2312,10 +2362,30 @@ components:
           type: array
           items:
             type: string
+        points:
+          type: array
+          description: Where each place name resolved to — check country_code to catch ambiguous names.
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              lat:
+                type: number
+              lon:
+                type: number
+              country_code:
+                type: string
+                nullable: true
         distance_km:
           type: integer
         vehicle_class:
           type: string
+        route_countries:
+          type: array
+          items:
+            type: string
+          description: Countries the route passes through, in order.
         total_eur:
           type: number
           nullable: true
@@ -2330,11 +2400,19 @@ components:
           description: 'Honest range: exit choice in closed systems changes the price.'
         partial:
           type: boolean
-          description: true = not all tolls on the route are included (see unknown_countries).
+          description: true = not all tolls are included; see unknown_countries and unchecked_countries.
         unknown_countries:
           type: array
           items:
             type: string
+          description: Countries on the route with no toll data in our reference (or none for this vehicle
+            class). Not the same as toll-free.
+        unchecked_countries:
+          type: array
+          items:
+            type: string
+          description: Countries with per-km tolls where tolled kilometres on this route could not be
+            measured.
         items:
           type: array
           items:

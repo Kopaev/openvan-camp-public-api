@@ -4,7 +4,8 @@ export class OpenVanApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly url: string
+    public readonly url: string,
+    public readonly body: unknown = null
   ) {
     super(message);
     this.name = "OpenVanApiError";
@@ -41,10 +42,19 @@ export async function apiGet<T = unknown>(
   });
 
   if (!response.ok) {
+    // Тело ошибки сохраняем: в нём понятное сообщение API («Place not found: …»), которое
+    // тул может передать агенту вместо голого «HTTP 422».
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      body = null;
+    }
     throw new OpenVanApiError(
       `HTTP ${response.status} from ${url.pathname}`,
       response.status,
-      url.toString()
+      url.toString(),
+      body
     );
   }
 

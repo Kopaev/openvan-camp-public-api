@@ -54,6 +54,8 @@ export const estimateRouteTollsInput = {
 
 type RouteTolls = {
   waypoints: string[];
+  points?: Array<{ name: string; country_code: string | null }>;
+  unchecked_countries?: string[];
   distance_km: number;
   vehicle_class: string;
   total_eur: number | null;
@@ -76,11 +78,13 @@ export async function estimateRouteTolls({
   try {
     data = await apiGet<RouteTolls>("/api/tolls/route", { waypoints: waypoints.join("|"), vehicle_class, locale });
   } catch (e) {
-    if (e instanceof OpenVanApiError && e.status === 422) {
-      return text("Could not find one of the places or the route is invalid. Try more specific place names (city, country).", true);
-    }
-    if (e instanceof OpenVanApiError && e.status >= 500) {
-      return text("Routing or toll data is temporarily unavailable. Retry in a minute.", true);
+    if (e instanceof OpenVanApiError && e.status !== 429) {
+      const body = (e.body ?? {}) as { message?: string; error?: string; points?: Array<{ name: string; country_code?: string | null }> };
+      const where = body.points?.length
+        ? ` Places were resolved as: ${body.points.map((p) => `${p.name} (${p.country_code ?? "?"})`).join(", ")} — add a country to a name if one landed in the wrong place.`
+        : "";
+      const fallback = e.status >= 500 ? "Routing is temporarily unavailable, retry in a minute." : "The route could not be built.";
+      return text(`${body.message ?? fallback}${where}`, true);
     }
     throw e;
   }
@@ -103,12 +107,18 @@ export async function estimateRouteTolls({
   });
 
   const range = data.range_eur ? `€${data.range_eur.min}–${data.range_eur.max}` : "n/a";
+  const reasons: string[] = [];
+  if (data.unknown_countries.length) reasons.push(`no toll data for ${data.unknown_countries.join(", ")}`);
+  if (data.unchecked_countries?.length) reasons.push(`per-km tolls not measured on this route in ${data.unchecked_countries.join(", ")}`);
   const partial = data.partial
-    ? `\n\nPARTIAL: not all tolls are included${data.unknown_countries.length ? ` — no data for ${data.unknown_countries.join(", ")}` : ""}. Tell the user the real total is higher.`
+    ? `\n\nPARTIAL: not all tolls are included${reasons.length ? ` — ${reasons.join("; ")}` : ""}. Tell the user the real total may be higher.`
     : "";
+  const resolved = data.points?.length
+    ? data.points.map((p) => `${p.name} (${p.country_code ?? "?"})`).join(" → ")
+    : data.waypoints.join(" → ");
 
   return text(
-    `Tolls ${data.waypoints.join(" → ")} (${data.distance_km} km, vehicle_class=${data.vehicle_class}): about €${data.total_eur ?? 0}, range ${range}.\n` +
+    `Tolls ${resolved} (${data.distance_km} km, vehicle_class=${data.vehicle_class}): about €${data.total_eur ?? 0}, range ${range}.\n` +
       (lines.length ? lines.join("\n") : "No toll sections, vignettes or toll bridges found on this route.") +
       partial +
       `\n\nEstimate, not a quote: in ticket systems the price depends on the exits used.${ATTRIBUTION_FOOTER}`

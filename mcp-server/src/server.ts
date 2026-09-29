@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 
-import { VERSION } from "./config.js";
+import { ATTRIBUTION_FOOTER, VERSION } from "./config.js";
 import {
   getFuelPrices,
   getFuelPricesInput,
@@ -72,6 +72,25 @@ const readOnlyAnnotations = (title: string): ToolAnnotations => ({
 });
 
 /**
+ * CC BY 4.0 требует атрибуции, а 11 из 20 тулов её не ставили — агент пересказывал
+ * данные без источника. Подпись добавляется здесь, одним местом: новый тул получит её
+ * сам, без правки своего файла. Ошибки и ответы, где подпись уже есть, не трогаем.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function withAttribution<A extends any[], R>(handler: (...args: A) => Promise<R>) {
+  return async (...args: A): Promise<R> => {
+    const result = await handler(...args);
+    const r = result as { isError?: boolean; content?: Array<{ type: string; text?: string }> };
+    if (r?.isError || !Array.isArray(r?.content)) return result;
+    const last = [...r.content].reverse().find((c) => c.type === "text" && typeof c.text === "string");
+    if (last && !last.text!.includes("OpenVan.camp (CC BY 4.0)")) {
+      last.text += ATTRIBUTION_FOOTER;
+    }
+    return result;
+  };
+}
+
+/**
  * Factory shared between stdio (dist/index.js) and HTTP (dist/sse.js) entry points.
  */
 export function createServer(): McpServer {
@@ -90,7 +109,7 @@ export function createServer(): McpServer {
       inputSchema: getFuelPricesInput,
       annotations: readOnlyAnnotations("Get Fuel Prices"),
     },
-    getFuelPrices
+    withAttribution(getFuelPrices)
   );
   server.registerTool(
     "compare_fuel_prices",
@@ -101,7 +120,7 @@ export function createServer(): McpServer {
       inputSchema: compareFuelPricesInput,
       annotations: readOnlyAnnotations("Compare Fuel Prices"),
     },
-    compareFuelPrices
+    withAttribution(compareFuelPrices)
   );
   server.registerTool(
     "find_cheapest_fuel",
@@ -112,7 +131,7 @@ export function createServer(): McpServer {
       inputSchema: findCheapestFuelInput,
       annotations: readOnlyAnnotations("Find Cheapest Fuel"),
     },
-    findCheapestFuel
+    withAttribution(findCheapestFuel)
   );
 
   // VanSky weather
@@ -125,7 +144,7 @@ export function createServer(): McpServer {
       inputSchema: getVanSkyWeatherInput,
       annotations: readOnlyAnnotations("Get VanSky Weather Score"),
     },
-    getVanSkyWeather
+    withAttribution(getVanSkyWeather)
   );
   server.registerTool(
     "list_vansky_top",
@@ -136,7 +155,7 @@ export function createServer(): McpServer {
       inputSchema: listVanSkyTopInput,
       annotations: readOnlyAnnotations("List Top VanSky Countries"),
     },
-    listVanSkyTop
+    withAttribution(listVanSkyTop)
   );
 
   // Events
@@ -149,7 +168,7 @@ export function createServer(): McpServer {
       inputSchema: listEventsInput,
       annotations: readOnlyAnnotations("List Vanlife Events"),
     },
-    listEvents
+    withAttribution(listEvents)
   );
   server.registerTool(
     "get_event",
@@ -160,7 +179,7 @@ export function createServer(): McpServer {
       inputSchema: getEventInput,
       annotations: readOnlyAnnotations("Get Event Details"),
     },
-    getEvent
+    withAttribution(getEvent)
   );
 
   // Stories (news)
@@ -173,7 +192,7 @@ export function createServer(): McpServer {
       inputSchema: searchStoriesInput,
       annotations: readOnlyAnnotations("Search Vanlife News"),
     },
-    searchStories
+    withAttribution(searchStories)
   );
 
   // VanBasket (food price index)
@@ -186,7 +205,7 @@ export function createServer(): McpServer {
       inputSchema: compareVanBasketInput,
       annotations: readOnlyAnnotations("Compare Food Prices"),
     },
-    compareVanBasket
+    withAttribution(compareVanBasket)
   );
   server.registerTool(
     "get_vanbasket",
@@ -197,7 +216,7 @@ export function createServer(): McpServer {
       inputSchema: getVanBasketInput,
       annotations: readOnlyAnnotations("Get Food Price Index"),
     },
-    getVanBasket
+    withAttribution(getVanBasket)
   );
 
   // Currency
@@ -210,7 +229,7 @@ export function createServer(): McpServer {
       inputSchema: getCurrencyRateInput,
       annotations: readOnlyAnnotations("Convert Currency"),
     },
-    getCurrencyRate
+    withAttribution(getCurrencyRate)
   );
 
   // Visa & border rules
@@ -223,7 +242,7 @@ export function createServer(): McpServer {
       inputSchema: checkVisaRulesInput,
       annotations: readOnlyAnnotations("Check Visa Rules"),
     },
-    checkVisaRules
+    withAttribution(checkVisaRules)
   );
   server.registerTool(
     "get_route_visa_rules",
@@ -234,7 +253,7 @@ export function createServer(): McpServer {
       inputSchema: getRouteVisaRulesInput,
       annotations: readOnlyAnnotations("Visa Rules For A Route"),
     },
-    getRouteVisaRules
+    withAttribution(getRouteVisaRules)
   );
   server.registerTool(
     "get_vehicle_import_rules",
@@ -245,7 +264,7 @@ export function createServer(): McpServer {
       inputSchema: getVehicleImportRulesInput,
       annotations: readOnlyAnnotations("Temporary Vehicle Import Rules"),
     },
-    getVehicleImportRules
+    withAttribution(getVehicleImportRules)
   );
 
   // Toll roads
@@ -258,7 +277,7 @@ export function createServer(): McpServer {
       inputSchema: getTollRatesInput,
       annotations: readOnlyAnnotations("Toll Road Rates By Country"),
     },
-    getTollRates
+    withAttribution(getTollRates)
   );
   server.registerTool(
     "estimate_route_tolls",
@@ -269,7 +288,7 @@ export function createServer(): McpServer {
       inputSchema: estimateRouteTollsInput,
       annotations: readOnlyAnnotations("Estimate Tolls For A Route"),
     },
-    estimateRouteTolls
+    withAttribution(estimateRouteTolls)
   );
 
   // License plates of the world
@@ -281,7 +300,7 @@ export function createServer(): McpServer {
       inputSchema: listLicensePlateCountriesInput,
       annotations: readOnlyAnnotations("License Plate Countries"),
     },
-    listLicensePlateCountries
+    withAttribution(listLicensePlateCountries)
   );
   server.registerTool(
     "get_license_plate_country",
@@ -292,7 +311,7 @@ export function createServer(): McpServer {
       inputSchema: getLicensePlateCountryInput,
       annotations: readOnlyAnnotations("License Plate Format And Region Codes"),
     },
-    getLicensePlateCountry
+    withAttribution(getLicensePlateCountry)
   );
   server.registerTool(
     "check_license_plate",
@@ -303,7 +322,7 @@ export function createServer(): McpServer {
       inputSchema: checkLicensePlateInput,
       annotations: readOnlyAnnotations("Check A License Plate"),
     },
-    checkLicensePlate
+    withAttribution(checkLicensePlate)
   );
   server.registerTool(
     "get_license_plate_image",
@@ -314,7 +333,7 @@ export function createServer(): McpServer {
       inputSchema: getLicensePlateImageInput,
       annotations: readOnlyAnnotations("License Plate Image"),
     },
-    getLicensePlateImage
+    withAttribution(getLicensePlateImage)
   );
 
   return server;

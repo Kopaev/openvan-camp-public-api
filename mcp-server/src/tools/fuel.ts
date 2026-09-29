@@ -6,6 +6,9 @@ const FuelCountrySchema = z.object({
   country_name: z.string(),
   region: z.string().nullable().optional(),
   currency: z.string(),
+  // Валюта каждого грейда: страновая currency — валюта первой строки, а в Венесуэле
+  // дизель в USD, бензин в VES. Без этой карты 428 VES считались как 428 USD.
+  currencies: z.record(z.string(), z.string()).optional(),
   unit: z.string(),
   prices: z
     .record(z.string(), z.number().nullable())
@@ -25,6 +28,11 @@ const RatesResponseSchema = z.object({
 });
 
 type FuelCountry = z.infer<typeof FuelCountrySchema>;
+
+/** Валюта конкретного грейда, со страновой как запасной. */
+function currencyOf(c: FuelCountry, fuelType: string): string {
+  return c.currencies?.[fuelType] ?? c.currency;
+}
 
 const FUEL_TYPES = [
   "gasoline_regular",
@@ -177,12 +185,15 @@ export async function getFuelPrices({
 
 function formatCountry(c: FuelCountry, rates: Record<string, number>): string {
   const prices = c.prices ?? {};
-  const isEur = c.currency.toUpperCase() === "EUR";
+  const used = new Set(Object.values(c.currencies ?? {}));
+  const headerCurrency = used.size > 1 ? "mixed currencies" : c.currency;
+  const isEur = headerCurrency.toUpperCase() === "EUR";
   const lines = [
-    `${c.country_name} (${c.country_code}) — prices per ${c.unit} in ${c.currency}${isEur ? "" : " (≈ EUR shown in brackets)"}`,
+    `${c.country_name} (${c.country_code}) — prices per ${c.unit} in ${headerCurrency}${isEur ? "" : " (≈ EUR shown in brackets)"}`,
   ];
   FUEL_TYPES.forEach((fuelType) => {
-    lines.push(`  ${FUEL_TYPE_LABELS[fuelType].padEnd(17)} ${fmtPair(prices[fuelType], c.currency, rates, isEur)}`);
+    const cur = currencyOf(c, fuelType);
+    lines.push(`  ${FUEL_TYPE_LABELS[fuelType].padEnd(17)} ${fmtPair(prices[fuelType], cur, rates, cur.toUpperCase() === "EUR")}`);
   });
   if (c.fetched_at) lines.push(`  Updated:  ${c.fetched_at}`);
   if (c.sources?.length) lines.push(`  Sources:  ${c.sources.join(", ")}`);
@@ -191,10 +202,13 @@ function formatCountry(c: FuelCountry, rates: Record<string, number>): string {
 
 function formatCountryRow(c: FuelCountry, rates: Record<string, number>): string {
   const p = c.prices ?? {};
-  const isEur = c.currency.toUpperCase() === "EUR";
-  const diesel = fmtPair(p.diesel, c.currency, rates, isEur);
-  const gasoline = fmtPair(p.gasoline, c.currency, rates, isEur);
-  const lpg = fmtPair(p.lpg, c.currency, rates, isEur);
+  const pair = (t: string) => {
+    const cur = currencyOf(c, t);
+    return fmtPair(p[t], cur, rates, cur.toUpperCase() === "EUR");
+  };
+  const diesel = pair("diesel");
+  const gasoline = pair("gasoline");
+  const lpg = pair("lpg");
   return `${c.country_code}  ${c.country_name.padEnd(25)}  diesel=${diesel}  gas=${gasoline}  lpg=${lpg}`;
 }
 
@@ -242,6 +256,7 @@ export async function compareFuelPrices({
 
   type Row = {
     c: FuelCountry;
+    cur: string;
     priceLocal: number | null | undefined;
     priceEur: number; // EUR in the country's native unit; NaN if conversion unavailable
     priceEurPerLiter: number; // EUR per liter — normalized basis for sorting/comparison
@@ -252,9 +267,11 @@ export async function compareFuelPrices({
     .filter((c): c is FuelCountry => Boolean(c))
     .map((c) => {
       const priceLocal = c.prices?.[fuel_type];
-      const priceEur = toEur(priceLocal, c.currency, rates);
+      const cur = currencyOf(c, fuel_type);
+      const priceEur = toEur(priceLocal, cur, rates);
       return {
         c,
+        cur,
         priceLocal,
         priceEur,
         priceEurPerLiter: toEurPerLiter(priceEur, c.unit),
@@ -288,8 +305,8 @@ export async function compareFuelPrices({
 
   const table = rows
     .map((r) => {
-      const isEur = r.c.currency.toUpperCase() === "EUR";
-      const local = `${fmt(r.priceLocal)} ${r.c.currency}/${r.c.unit}`;
+      const isEur = r.cur.toUpperCase() === "EUR";
+      const local = `${fmt(r.priceLocal)} ${r.cur}/${r.c.unit}`;
       if (isEur) {
         return `  ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ${local}`;
       }
@@ -302,8 +319,8 @@ export async function compareFuelPrices({
 
   const cheapest = rows[0];
   const cheapestLine = isNaN(cheapest.priceEurPerLiter)
-    ? `Cheapest (by local price only, EUR conversion unavailable): ${cheapest.c.country_name} at ${fmt(cheapest.priceLocal)} ${cheapest.c.currency}/${cheapest.c.unit}.`
-    : `Cheapest: ${cheapest.c.country_name} at ≈ ${cheapest.priceEurPerLiter.toFixed(3)} EUR/liter${cheapest.c.currency.toUpperCase() !== "EUR" ? ` (${fmt(cheapest.priceLocal)} ${cheapest.c.currency}/${cheapest.c.unit})` : ""}.`;
+    ? `Cheapest (by local price only, EUR conversion unavailable): ${cheapest.c.country_name} at ${fmt(cheapest.priceLocal)} ${cheapest.cur}/${cheapest.c.unit}.`
+    : `Cheapest: ${cheapest.c.country_name} at ≈ ${cheapest.priceEurPerLiter.toFixed(3)} EUR/liter${cheapest.cur.toUpperCase() !== "EUR" ? ` (${fmt(cheapest.priceLocal)} ${cheapest.cur}/${cheapest.c.unit})` : ""}.`;
 
   const footer = ratesUpdatedAt ? `\nCurrency rates: openvan.camp (updated ${ratesUpdatedAt}).` : "";
 
@@ -354,9 +371,11 @@ export async function findCheapestFuel({
     .filter((c) => region === "world" || c.region === region)
     .map((c) => {
       const priceLocal = c.prices?.[fuel_type];
-      const priceEur = toEur(priceLocal, c.currency, rates);
+      const cur = currencyOf(c, fuel_type);
+      const priceEur = toEur(priceLocal, cur, rates);
       return {
         c,
+        cur,
         priceLocal,
         priceEur,
         priceEurPerLiter: toEurPerLiter(priceEur, c.unit),
@@ -380,8 +399,8 @@ export async function findCheapestFuel({
 
   const table = rows
     .map((r, i) => {
-      const isEur = r.c.currency.toUpperCase() === "EUR";
-      const local = `${fmt(r.priceLocal)} ${r.c.currency}/${r.c.unit}`;
+      const isEur = r.cur.toUpperCase() === "EUR";
+      const local = `${fmt(r.priceLocal)} ${r.cur}/${r.c.unit}`;
       if (isEur) {
         return `  ${i + 1}. ${r.c.country_code}  ${r.c.country_name.padEnd(25)}  ${local}`;
       }
