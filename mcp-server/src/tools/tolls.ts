@@ -1,0 +1,116 @@
+import { z } from "zod";
+import { apiGet, OpenVanApiError } from "../client.js";
+import { ATTRIBUTION_FOOTER } from "../config.js";
+
+/**
+ * Toll roads — /api/tolls/*.
+ *
+ * Цифры отдаём как есть, вместе с датой проверки и источником: тариф без даты
+ * агент подаст как вечный. Оценка маршрута — диапазон, и флаг partial обязан
+ * дойти до человека, иначе неполная сумма выглядит полной.
+ */
+
+const VehicleClass = z
+  .enum(["car", "van", "heavy"])
+  .default("van")
+  .describe("car; van = campervan/motorhome up to 3.5 t (default); heavy = over 3.5 t.");
+
+function text(value: string, isError = false) {
+  return { content: [{ type: "text" as const, text: value }], ...(isError ? { isError: true } : {}) };
+}
+
+export const getTollRatesInput = {
+  country_code: z.string().length(2).describe("ISO 3166-1 alpha-2 country code, e.g. FR."),
+  locale: z.string().optional().describe("Language of names: en, ru, de, fr, es, pt, tr."),
+};
+
+export async function getTollRates({ country_code, locale }: { country_code: string; locale?: string }) {
+  const cc = country_code.toUpperCase();
+  try {
+    const data = await apiGet<Record<string, unknown>>(`/api/tolls/countries/${cc}`, { locale });
+    delete data._attribution;
+
+    return text(
+      `Toll roads in ${cc} (system_type: closed = ticket, open = pay on the road, free_flow = no barriers, vignette = pay for time, free = no tolls). ` +
+        `Prices in local currency, *_eur at today's rate:\n\n${JSON.stringify(data, null, 2)}${ATTRIBUTION_FOOTER}`
+    );
+  } catch (e) {
+    if (e instanceof OpenVanApiError && e.status === 404) {
+      return text(`No toll data for ${cc} yet — do not assume the roads are free.`, true);
+    }
+    throw e;
+  }
+}
+
+export const estimateRouteTollsInput = {
+  waypoints: z
+    .array(z.string().min(1).max(120))
+    .min(2)
+    .max(10)
+    .describe('2-10 place names in travel order: cities, addresses or countries (a country means its capital), e.g. ["Rome", "Paris"].'),
+  vehicle_class: VehicleClass,
+  locale: z.string().optional().describe("Language of bridge/section names: en, ru, de, fr, es, pt, tr."),
+};
+
+type RouteTolls = {
+  waypoints: string[];
+  distance_km: number;
+  vehicle_class: string;
+  total_eur: number | null;
+  range_eur: { min: number; max: number } | null;
+  partial: boolean;
+  unknown_countries: string[];
+  items: Array<{ type: string; country: string; amount_local: number; currency: string; amount_eur: number | null; meta: Record<string, unknown> }>;
+};
+
+export async function estimateRouteTolls({
+  waypoints,
+  vehicle_class = "van",
+  locale,
+}: {
+  waypoints: string[];
+  vehicle_class?: "car" | "van" | "heavy";
+  locale?: string;
+}) {
+  let data: RouteTolls;
+  try {
+    data = await apiGet<RouteTolls>("/api/tolls/route", { waypoints: waypoints.join("|"), vehicle_class, locale });
+  } catch (e) {
+    if (e instanceof OpenVanApiError && e.status === 422) {
+      return text("Could not find one of the places or the route is invalid. Try more specific place names (city, country).", true);
+    }
+    if (e instanceof OpenVanApiError && e.status >= 500) {
+      return text("Routing or toll data is temporarily unavailable. Retry in a minute.", true);
+    }
+    throw e;
+  }
+
+  // Плата за километры приходит кусками по участкам маршрута — агенту нужна одна строка
+  // на страну. Мосты, тоннели и виньетки остаются поштучно: у них есть имя и срок.
+  const grouped = new Map<string, { label: string; local: number; currency: string; eur: number | null }>();
+  for (const i of data.items) {
+    const label = (i.meta?.name as string | undefined) ?? (i.type === "per_km" ? "motorways per km" : i.type);
+    const key = i.type === "per_km" ? `${i.country}|per_km|${i.currency}` : `${i.country}|${label}|${grouped.size}`;
+    const row = grouped.get(key) ?? { label, local: 0, currency: i.currency, eur: 0 };
+    row.local += i.amount_local;
+    row.eur = row.eur === null || i.amount_eur === null ? null : row.eur + i.amount_eur;
+    grouped.set(key, row);
+  }
+  const round = (n: number) => Math.round(n * 100) / 100;
+  const lines = [...grouped.entries()].map(([key, r]) => {
+    const eur = r.eur === null ? "" : ` (≈ €${round(r.eur)})`;
+    return `- ${key.split("|")[0]} ${r.label}: ${round(r.local)} ${r.currency}${eur}`;
+  });
+
+  const range = data.range_eur ? `€${data.range_eur.min}–${data.range_eur.max}` : "n/a";
+  const partial = data.partial
+    ? `\n\nPARTIAL: not all tolls are included${data.unknown_countries.length ? ` — no data for ${data.unknown_countries.join(", ")}` : ""}. Tell the user the real total is higher.`
+    : "";
+
+  return text(
+    `Tolls ${data.waypoints.join(" → ")} (${data.distance_km} km, vehicle_class=${data.vehicle_class}): about €${data.total_eur ?? 0}, range ${range}.\n` +
+      (lines.length ? lines.join("\n") : "No toll sections, vignettes or toll bridges found on this route.") +
+      partial +
+      `\n\nEstimate, not a quote: in ticket systems the price depends on the exits used.${ATTRIBUTION_FOOTER}`
+  );
+}

@@ -48,8 +48,14 @@ import {
   listLicensePlateCountries,
   listLicensePlateCountriesInput,
 } from "./tools/plates.js";
+import {
+  estimateRouteTolls,
+  estimateRouteTollsInput,
+  getTollRates,
+  getTollRatesInput,
+} from "./tools/tolls.js";
 
-// Все 18 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
+// Все 20 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
 // не пишет данные, не удаляет записи. Annotations транслируются в UI хостов
 // (ChatGPT: DEV > Приложения, Claude Desktop, Cursor) — без них SDK проставляет
 // MCP defaults (destructiveHint=true), и хосты помечают нас как "разрушительные".
@@ -240,6 +246,30 @@ export function createServer(): McpServer {
       annotations: readOnlyAnnotations("Temporary Vehicle Import Rules"),
     },
     getVehicleImportRules
+  );
+
+  // Toll roads
+  server.registerTool(
+    "get_toll_rates",
+    {
+      title: "Toll Road Rates By Country",
+      description:
+        "Toll reference for one country: payment system, per-km rates by vehicle class (car, campervan up to 3.5 t, over 3.5 t), vignette prices for every duration, concession sections and toll bridges/tunnels, each with verification date and source.",
+      inputSchema: getTollRatesInput,
+      annotations: readOnlyAnnotations("Toll Road Rates By Country"),
+    },
+    getTollRates
+  );
+  server.registerTool(
+    "estimate_route_tolls",
+    {
+      title: "Estimate Tolls For A Route",
+      description:
+        "Estimate toll cost for a road trip from 2-10 place names: per-km tolls, vignettes, bridges and tunnels, as a EUR range with a per-country breakdown. Flags partial results when a country on the route has no data.",
+      inputSchema: estimateRouteTollsInput,
+      annotations: readOnlyAnnotations("Estimate Tolls For A Route"),
+    },
+    estimateRouteTolls
   );
 
   // License plates of the world
