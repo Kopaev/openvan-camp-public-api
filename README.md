@@ -9,7 +9,7 @@ Free, no-auth API for vanlife data: fuel prices, route fuel cost, currency rates
 
 **JavaScript/TypeScript SDK:** [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) — `npm install @openvancamp/sdk`. Zero-config, typed, Node.js / browser / edge. [SDK docs →](./sdk/README.md)
 
-**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 18 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
+**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 20 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
 
 **Gemini CLI extension:** install this repository with `gemini extensions install https://github.com/openvancamp/openvan-camp-public-api`. The root [`gemini-extension.json`](./gemini-extension.json) connects Gemini CLI directly to the hosted OpenVan MCP server; no API key is required.
 
@@ -36,6 +36,8 @@ The OpenAPI spec at `/docs.openapi` is generated from the live codebase and is t
 |----------|-------------|----------|
 | `GET /api/fuel/prices` | Retail fuel prices (gasoline, diesel, LPG, E85) | 160+ countries |
 | `POST /api/route-cost` | Fuel cost for a route of 2–10 waypoints, per-country prices | — |
+| `GET /api/tolls/countries` | Toll roads by country: payment system, per-km rates by vehicle class, vignettes | 84 countries |
+| `GET /api/tolls/route` | Toll cost for a route of 2–10 place names (car, van, heavy), EUR range | — |
 | `GET /api/currency/rates` | Exchange rates relative to EUR | 150+ currencies |
 | `GET /api/vanbasket/countries` | Food price index relative to world average (100 = world avg) | 90+ countries |
 | `GET /api/vanbasket/compare?from=DE&to=TR` | Compare food costs between two countries | — |

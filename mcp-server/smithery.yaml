@@ -1,6 +1,6 @@
 name: openvan-travel
 displayName: OpenVan Travel Data
-description: Free vanlife & RV travel data for AI agents — fuel prices (160+ countries), VanSky weather scores, VanBasket food price index, currency rates, events, news stories, visa and vehicle-import rules, license plates of the world. 18 read-only tools. No auth. CC BY 4.0.
+description: Free vanlife & RV travel data for AI agents — fuel prices (160+ countries), toll roads, VanSky weather scores, VanBasket food price index, currency rates, events, news stories, visa and vehicle-import rules, license plates of the world. 20 read-only tools. No auth. CC BY 4.0.
 version: 0.4.1
 license: MIT
 homepage: https://openvan.camp/ai
@@ -78,3 +78,5 @@ tools:
   - get_license_plate_country
   - check_license_plate
   - get_license_plate_image
+  - get_toll_rates
+  - estimate_route_tolls

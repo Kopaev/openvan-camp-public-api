@@ -5,9 +5,10 @@
 
 **Official MCP server for [OpenVan.camp](https://openvan.camp)** — free, no-auth, machine-readable vanlife and RV travel data for AI agents.
 
-Exposes 18 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
+Exposes 20 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
 
 - **Fuel prices** across all API-supported countries, using the same price keys as `/api/fuel/prices`
+- **Toll roads** — per-km rates, vignettes, toll bridges and tunnels by country; toll estimate for a route
 - **VanSky** vanlife weather suitability scores (0-100)
 - **VanBasket** food price index (world average = 100)
 - **Currency** conversion (150+ currencies)
@@ -94,6 +95,8 @@ npx -y @openvancamp/mcp-server
 | `get_license_plate_country` | Plate format and every region code of one country |
 | `check_license_plate` | Validate a plate number and resolve its region code |
 | `get_license_plate_image` | The plate as an image (PNG inline + SVG/PNG links); any text with `custom` |
+| `get_toll_rates` | Toll reference for one country: per-km rates by vehicle class, vignettes, bridges and tunnels |
+| `estimate_route_tolls` | Toll cost for a route of 2–10 place names as a EUR range, flags partial results |
 
 All tools are `readOnlyHint: true` and `openWorldHint: false`. Safe to allow by default.
 

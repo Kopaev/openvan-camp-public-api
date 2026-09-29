@@ -5,13 +5,14 @@ openapi: 3.0.3
 info:
   title: OpenVan.camp AI Public API
   description: 'Curated read-only OpenAPI schema for AI agents. Use this API to retrieve current vanlife
-    news stories, source articles, events, fuel prices, route fuel cost, visa and border rules (including
-    temporary vehicle import), currency rates, VanBasket food price index data, VanSky weather suitability
-    data, and license plates of the world (formats, region codes, validation, ready SVG/PNG plate images).
-    No authentication is required. Data is CC BY 4.0 and should be attributed to OpenVan.camp. Rate limit:
-    120 requests/minute per IP, except POST /api/route-cost at 30/minute (see X-RateLimit-Limit and X-RateLimit-Remaining
-    response headers). Pass `?source=<integration-domain>` for attribution tracking.'
-  version: 1.3.0
+    news stories, source articles, events, fuel prices, route fuel cost, toll roads (per-km rates, vignettes,
+    toll bridges and tunnels, route toll estimate), visa and border rules (including temporary vehicle
+    import), currency rates, VanBasket food price index data, VanSky weather suitability data, and license
+    plates of the world (formats, region codes, validation, ready SVG/PNG plate images). No authentication
+    is required. Data is CC BY 4.0 and should be attributed to OpenVan.camp. Rate limit: 120 requests/minute
+    per IP, except POST /api/route-cost at 30/minute and GET /api/tolls/route at 20/minute (see X-RateLimit-Limit
+    and X-RateLimit-Remaining response headers). Pass `?source=<integration-domain>` for attribution tracking.'
+  version: 1.4.0
   termsOfService: https://openvan.camp/en/terms
   contact:
     name: OpenVan.camp
@@ -32,6 +33,7 @@ info:
       GET /api/plates/{code}/random: 60 requests/minute
       GET /api/plates/{code}/plate.svg: 60 requests/minute
       GET /api/plates/{code}/plate.png: 60 requests/minute
+      GET /api/tolls/route: 20 requests/minute
   x-attribution:
     required: false
     recommended: true
@@ -51,6 +53,8 @@ tags:
   description: Vanlife events, exhibitions, festivals, meetups, road trips and related source articles.
 - name: Fuel Prices
   description: Current retail fuel prices by country.
+- name: Toll Roads
+  description: Toll road reference by country and toll cost estimates for a route.
 - name: Currency Rates
   description: Exchange rates relative to EUR.
 - name: VanBasket
@@ -496,6 +500,137 @@ paths:
                 additionalProperties: true
         '422':
           $ref: '#/components/responses/ValidationError'
+  /api/tolls/countries:
+    get:
+      tags:
+      - Toll Roads
+      operationId: getTollCountries
+      summary: List toll road reference by country
+      description: 'Every covered country: payment system (closed ticket, open, free-flow, vignette, free),
+        per-km rates by vehicle class (car, van up to 3.5 t, heavy over 3.5 t), vignettes, verification
+        date and source. Prices in local currency plus EUR at the current rate.'
+      parameters:
+      - name: locale
+        in: query
+        required: false
+        description: 'Language of names: en, ru, de, fr, es, pt, tr.'
+        schema:
+          type: string
+          enum:
+          - en
+          - ru
+          - de
+          - fr
+          - es
+          - pt
+          - tr
+          default: en
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Toll countries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TollCountriesResponse'
+  /api/tolls/countries/{code}:
+    get:
+      tags:
+      - Toll Roads
+      operationId: getTollCountry
+      summary: Get toll roads of one country
+      description: 'Full reference for one country: rates, all vignette durations, concession sections
+        with own rates, toll bridges, tunnels and passes with coordinates and prices by vehicle class.'
+      parameters:
+      - $ref: '#/components/parameters/CountryCode'
+      - name: locale
+        in: query
+        required: false
+        description: 'Language of names: en, ru, de, fr, es, pt, tr.'
+        schema:
+          type: string
+          enum:
+          - en
+          - ru
+          - de
+          - fr
+          - es
+          - pt
+          - tr
+          default: en
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Toll country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TollCountryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/tolls/route:
+    get:
+      tags:
+      - Toll Roads
+      operationId: getRouteTolls
+      summary: Estimate toll cost for a route
+      description: 'Builds a road route from 2-10 place names (city, address or country = its capital)
+        and estimates tolls: per-km sections, concessions, vignettes, bridges and tunnels. Returns a EUR
+        range. partial=true means some countries on the route have no toll data yet. Rate limit 20/minute.'
+      parameters:
+      - name: waypoints
+        in: query
+        required: true
+        description: 2-10 place names separated by |
+        schema:
+          type: string
+        example: Rome|Paris
+      - name: vehicle_class
+        in: query
+        required: false
+        description: car; van = campervan/motorhome up to 3.5 t (default); heavy = over 3.5 t.
+        schema:
+          type: string
+          enum:
+          - car
+          - van
+          - heavy
+          default: van
+      - name: locale
+        in: query
+        required: false
+        description: 'Language of names: en, ru, de, fr, es, pt, tr.'
+        schema:
+          type: string
+          enum:
+          - en
+          - ru
+          - de
+          - fr
+          - es
+          - pt
+          - tr
+          default: en
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Route toll estimate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TollRouteResponse'
+        '422':
+          description: Validation error or a place name could not be geocoded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Routing or toll probe temporarily unavailable, retry later
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/visa/check:
     get:
       tags:
@@ -1982,3 +2117,253 @@ components:
           type: string
         message:
           type: string
+    TollRate:
+      type: object
+      properties:
+        vehicle_class:
+          type: string
+          enum:
+          - car
+          - van
+          - heavy
+          description: car; van = campervan/motorhome up to 3.5 t; heavy = over 3.5 t.
+        system_type:
+          type: string
+          enum:
+          - closed
+          - open
+          - free_flow
+          - vignette
+          - free
+        rate_per_km_local:
+          type: number
+          nullable: true
+        currency:
+          type: string
+          example: EUR
+        rate_per_km_eur:
+          type: number
+          nullable: true
+          description: Converted at the current exchange rate.
+        seasonal:
+          type: object
+          nullable: true
+        verified_at:
+          type: string
+          format: date
+          nullable: true
+        source_url:
+          type: string
+          format: uri
+    TollVignette:
+      type: object
+      properties:
+        vehicle_class:
+          type: string
+        period:
+          type: string
+          example: 10day
+        valid_days:
+          type: integer
+        price_local:
+          type: number
+        currency:
+          type: string
+        price_eur:
+          type: number
+          nullable: true
+        verified_at:
+          type: string
+          format: date
+          nullable: true
+        source_url:
+          type: string
+          format: uri
+        buy_url:
+          type: string
+          format: uri
+          nullable: true
+    TollCountrySummary:
+      type: object
+      properties:
+        country_code:
+          type: string
+          example: FR
+        name:
+          type: string
+        system_type:
+          type: string
+          nullable: true
+          enum:
+          - closed
+          - open
+          - free_flow
+          - vignette
+          - free
+          - null
+        rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/TollRate'
+        vignettes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TollVignette'
+        sections_count:
+          type: integer
+        objects_count:
+          type: integer
+        verified_at:
+          type: string
+          format: date
+          nullable: true
+    TollCountriesResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        vehicle_classes:
+          type: array
+          items:
+            type: string
+        countries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TollCountrySummary'
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    TollCountryResponse:
+      allOf:
+      - $ref: '#/components/schemas/TollCountrySummary'
+      - type: object
+        properties:
+          sections:
+            type: array
+            description: Concession sections with their own per-km rates.
+            items:
+              type: object
+              properties:
+                slug:
+                  type: string
+                name:
+                  type: string
+                rates_per_km_by_class:
+                  type: object
+                  additionalProperties:
+                    type: number
+                currency:
+                  type: string
+                verified_at:
+                  type: string
+                  format: date
+                  nullable: true
+                source_url:
+                  type: string
+                  format: uri
+          objects:
+            type: array
+            description: Toll bridges, tunnels, passes and ferries with a fixed price.
+            items:
+              type: object
+              properties:
+                slug:
+                  type: string
+                name:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                  - bridge
+                  - tunnel
+                  - ferry
+                  - pass
+                  - gate
+                length_km:
+                  type: number
+                  nullable: true
+                lat:
+                  type: number
+                lng:
+                  type: number
+                prices_by_class:
+                  type: object
+                  additionalProperties:
+                    type: number
+                currency:
+                  type: string
+                prices_eur_by_class:
+                  type: object
+                  additionalProperties:
+                    type: number
+                    nullable: true
+                verified_at:
+                  type: string
+                  format: date
+                  nullable: true
+                source_url:
+                  type: string
+                  format: uri
+          _attribution:
+            $ref: '#/components/schemas/Attribution'
+    TollRouteResponse:
+      type: object
+      properties:
+        waypoints:
+          type: array
+          items:
+            type: string
+        distance_km:
+          type: integer
+        vehicle_class:
+          type: string
+        total_eur:
+          type: number
+          nullable: true
+        range_eur:
+          type: object
+          nullable: true
+          properties:
+            min:
+              type: number
+            max:
+              type: number
+          description: 'Honest range: exit choice in closed systems changes the price.'
+        partial:
+          type: boolean
+          description: true = not all tolls on the route are included (see unknown_countries).
+        unknown_countries:
+          type: array
+          items:
+            type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum:
+                - per_km
+                - section
+                - vignette
+                - object
+              country:
+                type: string
+              amount_local:
+                type: number
+              currency:
+                type: string
+              amount_eur:
+                type: number
+                nullable: true
+              meta:
+                type: object
+              verified_at:
+                type: string
+                format: date
+                nullable: true
+              source_url:
+                type: string
+                format: uri
+        _attribution:
+          $ref: '#/components/schemas/Attribution'

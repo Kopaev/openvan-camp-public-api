@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-29
+
+### Added
+- **Toll roads API**: `/api/tolls/countries`, `/api/tolls/countries/{code}`, `/api/tolls/route`.
+  Per-km rates by vehicle class (car, van up to 3.5 t, heavy over 3.5 t), vignettes, concession sections,
+  toll bridges and tunnels, each with verification date and source; route estimate from place names as a
+  EUR range with a `partial` flag. `openapi.yaml` regenerated — spec 1.4.0, 31 paths.
+- **MCP server v0.5.0** — two new read-only tools: `get_toll_rates`, `estimate_route_tolls`, 20 tools total.
+
 ## 2026-09-28
 
 ### Changed
