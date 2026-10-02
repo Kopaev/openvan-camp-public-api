@@ -17,7 +17,7 @@ curl -s "$API/api/fuel/prices" | jq '
   | map(select(.value.region == "europe" and .value.prices.diesel != null))
   | sort_by(.value.prices.diesel)
   | .[0:5]
-  | map({country: .value.country_name, diesel: .value.prices.diesel, currency: .value.currency})
+  | map({country: .value.country_name, diesel: .value.prices.diesel, currency: (.value.currencies.diesel // .value.currency)})
 '
 
 # Diesel price in Germany
@@ -25,7 +25,7 @@ curl -s "$API/api/fuel/prices" | jq '.data.DE.prices.diesel'
 
 # Countries with LPG
 curl -s "$API/api/fuel/prices" | jq '
-  [.data | to_entries[] | select(.value.prices.lpg != null) | {country: .value.country_name, lpg: .value.prices.lpg, currency: .value.currency}]
+  [.data | to_entries[] | select(.value.prices.lpg != null) | {country: .value.country_name, lpg: .value.prices.lpg, currency: (.value.currencies.lpg // .value.currency)}]
   | sort_by(.lpg)
 '
 
@@ -84,6 +84,57 @@ curl -s "$API/api/story/free-overnight-parking-netherlands?locale=en" | jq '{
   sources: [.sources[] | {publisher: .source_name, lang: .language, url: .original_url}]
 }'
 
+# ─── ROUTE FUEL COST & TOLL ROADS ────────────────────────────────────────────
+
+# Fuel cost Berlin → Prague, 10 l/100 km
+curl -s -X POST "$API/api/route-cost" -H "Content-Type: application/json" \
+  -d '{"waypoints":["Berlin","Prague"],"cons":10,"fuel":"diesel"}' | jq '{distance_km, liters, fuel_cost, currency}'
+
+# Tolls Munich → Venice for a campervan (car | van | heavy). partial=true means a country has no data
+curl -s "$API/api/tolls/route?waypoints=Munich|Venice&vehicle_class=van" | jq '{total_eur, range_eur, partial, unknown_countries}'
+
+# Toll reference for one country
+curl -s "$API/api/tolls/countries/FR" | jq '{name, system_type, vignettes}'
+
+# ─── VISA & VEHICLE IMPORT ───────────────────────────────────────────────────
+
+# Russian passport → Turkey: entry mode and stay
+curl -s "$API/api/visa/check?passport=RU&destination=TR" | jq '.data | {entry_mode, max: .stay.max_continuous, total: .stay.max_total, window: .stay.window_days}'
+
+# Whole route for two passports
+curl -s "$API/api/visa/route?t=RU,GE,TR&p=RU,KZ" | jq '.data.legs[] | .name'
+
+# Temporary import of a foreign-plated vehicle
+curl -s "$API/api/visa/vehicle/TR" | jq '.data[0]'
+
+# ─── LICENSE PLATES ──────────────────────────────────────────────────────────
+
+# Which region is 799?
+curl -s "$API/api/plates/ru/validate?number=A123BC&region=799" | jq '.data | {valid, region_name, region_iso3166_2}'
+
+# Plate types (empty list where the country has no breakdown)
+curl -s "$API/api/plates/ua/types" | jq '[.data[] | .name]'
+
+# Plate image — or just use the URL in <img src>
+curl -s -o plate.png "$API/api/plates/ru/plate.png?number=A123BC&region=77&width=800"
+
+# ─── HOLIDAYS, HAZARDS, POWER PLUGS, CUSTOMS ─────────────────────────────────
+
+# School holidays in Germany in December (kind = public | school | traffic)
+curl -s "$API/api/holidays/countries/DE?from=2026-12-01&to=2026-12-31&kind=school" | jq '.items[] | {name, start, "end": .end, regions: [.regions[].code]}'
+
+# FCDO advice level + current GDACS disasters
+curl -s "$API/api/hazards/countries/TR" | jq '{advisory: .advisory.level, events: [.events[] | "\(.name) (\(.alert_level))"]}'
+
+# Active fires of the last 48 h, bbox = minLon,minLat,maxLon,maxLat (503 = area is loading, retry in a minute)
+curl -s "$API/api/hazards/fires?bbox=-1,38,1,40" | jq '.count'
+
+# Plugs and voltage
+curl -s "$API/api/electricity/countries/GB" | jq '{plugs, voltage, frequency}'
+
+# Customs Germany → Norway
+curl -s "$API/api/customs/countries/NO?from=DE" | jq '.items[] | {topic, summary, source_url}'
+
 # ─── COMBINED ────────────────────────────────────────────────────────────────
 
 # Road trip cost overview: fuel + food for multiple countries
@@ -96,7 +147,7 @@ FOOD=$(curl -s "$API/api/vanbasket/countries")
 for CODE in "${COUNTRIES[@]}"; do
   NAME=$(echo $FUEL | jq -r ".data.${CODE}.country_name // \"${CODE}\"")
   DIESEL=$(echo $FUEL | jq -r ".data.${CODE}.prices.diesel // \"N/A\"")
-  CURRENCY=$(echo $FUEL | jq -r ".data.${CODE}.currency // \"EUR\"")
+  CURRENCY=$(echo $FUEL | jq -r ".data.${CODE}.currencies.diesel // .data.${CODE}.currency // \"EUR\"")
   FOOD_IDX=$(echo $FOOD | jq -r ".data.${CODE}.vanbasket_index // \"N/A\"")
   echo "$NAME: diesel=$DIESEL $CURRENCY/L | food index=$FOOD_IDX (world=100)"
 done

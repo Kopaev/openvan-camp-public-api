@@ -33,7 +33,7 @@ def example_europe_diesel():
     data = response["data"]
 
     europe = [
-        (info["country_name"], info["prices"]["diesel"], info["currency"])
+        (info["country_name"], info["prices"]["diesel"], (info.get("currencies") or {}).get("diesel", info["currency"]))
         for code, info in data.items()
         if info["region"] == "europe" and info["prices"]["diesel"] is not None
     ]
@@ -70,7 +70,8 @@ def example_prices_in_usd():
             continue
         usd = convert_to_currency(
             c["prices"]["gasoline"],
-            c["currency"],
+            # A grade can have its own currency (Venezuela: diesel in USD, gasoline in VES)
+            (c.get("currencies") or {}).get("gasoline", c["currency"]),
             "USD",
             rates,
             from_unit=c["unit"],
@@ -97,7 +98,10 @@ def example_dataframe():
             price = c["prices"].get(fuel)
             if price is None:
                 continue
-            eur = price / rates[c["currency"]]
+            currency = (c.get("currencies") or {}).get(fuel, c["currency"])
+            if currency not in rates:
+                continue
+            eur = price / rates[currency]
             if c["unit"] == "gallon":
                 eur /= 3.78541
             rows.append({
@@ -106,7 +110,7 @@ def example_dataframe():
                 "region": c["region"],
                 "fuel": fuel,
                 "price_local": price,
-                "currency": c["currency"],
+                "currency": currency,
                 "price_eur_per_liter": round(eur, 4),
                 "updated": c["fetched_at"],
             })

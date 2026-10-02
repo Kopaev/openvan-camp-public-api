@@ -16,11 +16,17 @@ def get_fuel_prices() -> dict:
     return requests.get(f"{API}/api/fuel/prices").json()["data"]
 
 
+def grade_currency(country: dict, fuel: str) -> str:
+    """Currency of one grade. Venezuela prices diesel in USD and gasoline in VES,
+    so never convert every grade with the country `currency`."""
+    return (country.get("currencies") or {}).get(fuel, country["currency"])
+
+
 def cheapest_diesel_europe(top_n: int = 10) -> list[dict]:
     """Top N cheapest diesel countries in Europe."""
     data = get_fuel_prices()
     europe = [
-        {"country": c["country_name"], "diesel": c["prices"]["diesel"], "currency": c["currency"]}
+        {"country": c["country_name"], "diesel": c["prices"]["diesel"], "currency": grade_currency(c, "diesel")}
         for c in data.values()
         if c["region"] == "europe" and c["prices"]["diesel"] is not None
     ]
@@ -36,7 +42,10 @@ def countries_with_lpg_in_eur() -> list[dict]:
     for c in data.values():
         if c["prices"]["lpg"] is None:
             continue
-        price_eur = c["prices"]["lpg"] / rates.get(c["currency"], 1)
+        currency = grade_currency(c, "lpg")
+        if currency not in rates:
+            continue
+        price_eur = c["prices"]["lpg"] / rates[currency]
         if c["unit"] == "gallon":
             price_eur /= 3.78541
         result.append({
@@ -57,17 +66,18 @@ def fuel_prices_usd(country_code: str) -> dict:
     if not c:
         raise ValueError(f"Country {country_code} not found")
 
-    def to_usd(price):
+    def to_usd(fuel):
+        price = c["prices"].get(fuel)
         if price is None:
             return None
-        usd = (price / rates[c["currency"]]) * rates["USD"]
+        usd = (price / rates[grade_currency(c, fuel)]) * rates["USD"]
         return round(usd / 3.78541 if c["unit"] == "gallon" else usd, 3)
 
     return {
         "country": c["country_name"],
-        "gasoline_usd_per_liter": to_usd(c["prices"]["gasoline"]),
-        "diesel_usd_per_liter": to_usd(c["prices"]["diesel"]),
-        "lpg_usd_per_liter": to_usd(c["prices"]["lpg"]),
+        "gasoline_usd_per_liter": to_usd("gasoline"),
+        "diesel_usd_per_liter": to_usd("diesel"),
+        "lpg_usd_per_liter": to_usd("lpg"),
     }
 
 
@@ -223,8 +233,8 @@ def road_trip_cost_overview(country_codes: list[str]) -> list[dict]:
             continue
 
         diesel = f["prices"].get("diesel")
-        if diesel is not None:
-            diesel_eur = diesel / rates.get(f["currency"], 1)
+        if diesel is not None and grade_currency(f, "diesel") in rates:
+            diesel_eur = diesel / rates[grade_currency(f, "diesel")]
             if f["unit"] == "gallon":
                 diesel_eur /= 3.78541
         else:
@@ -238,6 +248,120 @@ def road_trip_cost_overview(country_codes: list[str]) -> list[dict]:
         })
 
     return sorted(result, key=lambda x: x["diesel_eur_per_liter"] or 999)
+
+
+# ─── ROUTE FUEL COST & TOLL ROADS ────────────────────────────────────────────
+
+
+def route_fuel_cost(waypoints: list[str], cons: float = 10, fuel: str = "diesel") -> dict:
+    """Fuel cost for 2–10 place names, with prices of every country on the way."""
+    r = requests.post(f"{API}/api/route-cost", json={"waypoints": waypoints, "cons": cons, "fuel": fuel})
+    r.raise_for_status()
+    return r.json()
+
+
+def route_tolls(waypoints: list[str], vehicle_class: str = "van") -> dict:
+    """Toll estimate in EUR. vehicle_class: car | van (up to 3.5 t) | heavy (over 3.5 t).
+    Check `partial`: a country in `unknown_countries` has no data, it is not free."""
+    r = requests.get(
+        f"{API}/api/tolls/route",
+        params={"waypoints": "|".join(waypoints), "vehicle_class": vehicle_class},
+    ).json()
+    return {
+        "total_eur": r["total_eur"],
+        "range_eur": r["range_eur"],
+        "partial": r["partial"],
+        "unknown_countries": r["unknown_countries"],
+    }
+
+
+# ─── VISA & VEHICLE IMPORT ───────────────────────────────────────────────────
+
+
+def visa_check(passport: str, destination: str) -> dict:
+    """Entry mode and length of stay for one passport and destination."""
+    d = requests.get(f"{API}/api/visa/check", params={"passport": passport, "destination": destination}).json()["data"]
+    stay = d["stay"]
+    return {
+        "entry_mode": d["entry_mode"],
+        "max_continuous_days": stay["max_continuous"],
+        "max_total_days": stay["max_total"],
+        "window_days": stay["window_days"],
+        "confidence": stay["confidence"],
+        "source": stay["source_url"],
+    }
+
+
+def visa_route(countries: list[str], passports: list[str]) -> dict:
+    """Visa rules for a whole route (up to 12 countries) and up to 10 passports."""
+    return requests.get(
+        f"{API}/api/visa/route", params={"t": ",".join(countries), "p": ",".join(passports)}
+    ).json()["data"]
+
+
+# ─── LICENSE PLATES ──────────────────────────────────────────────────────────
+
+
+def plate_region(country: str, number: str, region: str) -> dict:
+    """Validate a plate and resolve its region code."""
+    d = requests.get(
+        f"{API}/api/plates/{country.lower()}/validate", params={"number": number, "region": region}
+    ).json()["data"]
+    return {"valid": d["valid"], "region": d["region_name"], "iso": d["region_iso3166_2"]}
+
+
+def plate_image_url(country: str, number: str, region: str = "") -> str:
+    """Ready plate image — put it straight into <img src>. No request needed."""
+    return f"{API}/api/plates/{country.lower()}/plate.svg?number={number}&region={region}"
+
+
+# ─── HOLIDAYS, HAZARDS, POWER PLUGS, CUSTOMS ─────────────────────────────────
+
+
+def holidays(country: str, date_from: str, date_to: str, kind: str | None = None) -> list[dict]:
+    """Public, school (with regions) and peak traffic days. kind: public | school | traffic.
+    A country without data answers with an error — that is not "no holidays"."""
+    r = requests.get(
+        f"{API}/api/holidays/countries/{country.upper()}",
+        params={"from": date_from, "to": date_to, "kind": kind},
+    )
+    r.raise_for_status()
+    return [
+        {"kind": h["kind"], "name": h["name"], "start": h["start"], "end": h["end"],
+         "regions": [x["code"] for x in h["regions"]]}
+        for h in r.json()["items"]
+    ]
+
+
+def travel_hazards(country: str) -> dict:
+    """UK FCDO advice level + current GDACS disasters. The situation now, not a forecast."""
+    d = requests.get(f"{API}/api/hazards/countries/{country.upper()}").json()
+    return {
+        "advisory": d["advisory"]["level"] if d["advisory"] else None,
+        "events": [f"{e['name']} ({e['alert_level']})" for e in d["events"]],
+    }
+
+
+def active_fires(min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> list[dict]:
+    """NASA FIRMS fires of the last 48 h in a box up to 10°×10°.
+    A new area may answer 503 "being loaded" — retry in a minute."""
+    r = requests.get(f"{API}/api/hazards/fires", params={"bbox": f"{min_lon},{min_lat},{max_lon},{max_lat}"})
+    r.raise_for_status()
+    return r.json()["fires"]
+
+
+def power_plugs(country: str) -> dict:
+    """Plug types, voltage, frequency and campsite hook-up connector."""
+    d = requests.get(f"{API}/api/electricity/countries/{country.upper()}").json()
+    return {"plugs": d["plugs"], "voltage": d["voltage"], "frequency": d["frequency"], "campsites": d["campsites"]}
+
+
+def customs_rules(country: str, from_country: str | None = None) -> list[dict]:
+    """Customs rules on entry by car, each with an official quote and source link."""
+    d = requests.get(
+        f"{API}/api/customs/countries/{country.upper()}", params={"from": from_country}
+    ).json()
+    return [{"topic": i["topic"], "summary": i["summary"], "source": i["source_url"]} for i in d["items"]]
 
 
 # ─── Usage ────────────────────────────────────────────────────────────────────
@@ -260,3 +384,23 @@ if __name__ == "__main__":
     for row in road_trip_cost_overview(["DE", "CZ", "PL", "TR", "GE"]):
         diesel = f"{row['diesel_eur_per_liter']} EUR/L" if row["diesel_eur_per_liter"] else "N/A"
         print(f"  {row['country']}: diesel={diesel}, food index={row['food_index']} ({row['food_vs_world']})")
+
+    print("\n=== Tolls Munich → Venice (campervan) ===")
+    print(route_tolls(["Munich", "Venice"]))
+
+    print("\n=== Visa: Russian passport → Turkey ===")
+    print(visa_check("RU", "TR"))
+
+    print("\n=== Plate А123ВС 799 ===")
+    print(plate_region("ru", "A123BC", "799"), plate_image_url("ru", "A123BC", "799"))
+
+    print("\n=== School holidays in Germany, December ===")
+    for h in holidays("DE", "2026-12-01", "2026-12-31", kind="school")[:3]:
+        print(f"  {h['start']}–{h['end']} {h['name']} {h['regions']}")
+
+    print("\n=== Turkey: hazards, plugs ===")
+    print(travel_hazards("TR"), power_plugs("TR"))
+
+    print("\n=== Customs: Germany → Norway ===")
+    for rule in customs_rules("NO", "DE")[:3]:
+        print(f"  [{rule['topic']}] {rule['summary']}")

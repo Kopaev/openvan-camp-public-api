@@ -19,7 +19,7 @@ async function cheapestDieselEurope() {
     .map((c) => ({
       country: c.country_name,
       diesel: c.prices.diesel,
-      currency: c.currency,
+      currency: c.currencies?.diesel ?? c.currency,
     }));
 }
 
@@ -41,8 +41,8 @@ async function fuelPriceInUSD(countryCode) {
 
   return {
     country: country.country_name,
-    gasoline_usd_per_liter: toUSD(country.prices.gasoline, country.currency, country.unit),
-    diesel_usd_per_liter: toUSD(country.prices.diesel, country.currency, country.unit),
+    gasoline_usd_per_liter: toUSD(country.prices.gasoline, country.currencies?.gasoline ?? country.currency, country.unit),
+    diesel_usd_per_liter: toUSD(country.prices.diesel, country.currencies?.diesel ?? country.currency, country.unit),
   };
 }
 
@@ -56,10 +56,9 @@ async function countriesWithLPG() {
   return Object.values(data)
     .filter((c) => c.prices.lpg !== null)
     .map((c) => {
-      const eurPerLiter =
-        c.unit === "gallon"
-          ? (c.prices.lpg / rates[c.currency]) / 3.78541
-          : c.prices.lpg / rates[c.currency];
+      // A grade can have its own currency (Venezuela: diesel in USD, gasoline in VES)
+      const rate = rates[c.currencies?.lpg ?? c.currency];
+      const eurPerLiter = c.unit === "gallon" ? c.prices.lpg / rate / 3.78541 : c.prices.lpg / rate;
       return { country: c.country_name, eur_per_liter: +eurPerLiter.toFixed(3) };
     })
     .sort((a, b) => a.eur_per_liter - b.eur_per_liter);
@@ -196,7 +195,7 @@ async function roadTripCostComparison(countryCodes) {
 
       const dieselEUR =
         f.prices.diesel !== null
-          ? (f.prices.diesel / rates[f.currency]) * (f.unit === "gallon" ? 1 / 3.78541 : 1)
+          ? (f.prices.diesel / rates[f.currencies?.diesel ?? f.currency]) * (f.unit === "gallon" ? 1 / 3.78541 : 1)
           : null;
 
       return {
@@ -208,6 +207,88 @@ async function roadTripCostComparison(countryCodes) {
     })
     .filter(Boolean)
     .sort((a, b) => (a.diesel_eur_per_liter ?? 999) - (b.diesel_eur_per_liter ?? 999));
+}
+
+// ─── ROUTE FUEL COST & TOLL ROADS ────────────────────────────────────────────
+
+// Fuel cost for 2–10 place names, with prices of every country on the way
+async function routeFuelCost(waypoints, cons = 10, fuel = "diesel") {
+  const r = await fetch(`${API}/api/route-cost`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ waypoints, cons, fuel }),
+  }).then((r) => r.json());
+  return { distance_km: r.distance_km, liters: r.liters, cost: `${r.fuel_cost} ${r.currency}` };
+}
+
+// Toll estimate in EUR. vehicleClass: car | van (up to 3.5 t) | heavy (over 3.5 t).
+// partial = true: a country in unknown_countries has no data — it is not free.
+async function routeTolls(waypoints, vehicleClass = "van") {
+  const q = new URLSearchParams({ waypoints: waypoints.join("|"), vehicle_class: vehicleClass });
+  const r = await fetch(`${API}/api/tolls/route?${q}`).then((r) => r.json());
+  return { total_eur: r.total_eur, range_eur: r.range_eur, partial: r.partial, unknown: r.unknown_countries };
+}
+
+// ─── VISA ────────────────────────────────────────────────────────────────────
+
+async function visaCheck(passport, destination) {
+  const { data } = await fetch(
+    `${API}/api/visa/check?passport=${passport}&destination=${destination}`
+  ).then((r) => r.json());
+  return {
+    entry_mode: data.entry_mode,
+    max_continuous_days: data.stay.max_continuous,
+    max_total_days: data.stay.max_total,
+    window_days: data.stay.window_days,
+    source: data.stay.source_url,
+  };
+}
+
+// ─── LICENSE PLATES ──────────────────────────────────────────────────────────
+
+async function plateRegion(country, number, region) {
+  const q = new URLSearchParams({ number, region });
+  const { data } = await fetch(`${API}/api/plates/${country}/validate?${q}`).then((r) => r.json());
+  return { valid: data.valid, region: data.region_name, iso: data.region_iso3166_2 };
+}
+
+// Ready plate image for <img src> — no request needed
+const plateImageUrl = (country, number, region = "") =>
+  `${API}/api/plates/${country}/plate.svg?${new URLSearchParams({ number, region })}`;
+
+// ─── HOLIDAYS, HAZARDS, POWER PLUGS, CUSTOMS ─────────────────────────────────
+
+// kind: public | school | traffic. A country without data answers with an error, not "no holidays".
+async function holidays(country, from, to, kind) {
+  const q = new URLSearchParams({ from, to, ...(kind ? { kind } : {}) });
+  const r = await fetch(`${API}/api/holidays/countries/${country}?${q}`);
+  if (!r.ok) throw new Error((await r.json()).error ?? `HTTP ${r.status}`);
+  const { items } = await r.json();
+  return items.map((h) => ({ kind: h.kind, name: h.name, start: h.start, end: h.end, regions: h.regions.map((x) => x.code) }));
+}
+
+// FCDO advice level + current GDACS disasters (the situation now, not a forecast)
+async function travelHazards(country) {
+  const d = await fetch(`${API}/api/hazards/countries/${country}`).then((r) => r.json());
+  return { advisory: d.advisory?.level ?? null, events: d.events.map((e) => `${e.name} (${e.alert_level})`) };
+}
+
+// NASA FIRMS fires of the last 48 h, box up to 10°×10°. 503 = area is loading, retry in a minute.
+async function activeFires([minLon, minLat, maxLon, maxLat]) {
+  const r = await fetch(`${API}/api/hazards/fires?bbox=${minLon},${minLat},${maxLon},${maxLat}`);
+  if (r.status === 503) return null;
+  return (await r.json()).fires;
+}
+
+async function powerPlugs(country) {
+  const d = await fetch(`${API}/api/electricity/countries/${country}`).then((r) => r.json());
+  return { plugs: d.plugs, voltage: d.voltage, frequency: d.frequency };
+}
+
+// Customs rules on entry by car, each with an official quote and source link
+async function customsRules(country, from) {
+  const d = await fetch(`${API}/api/customs/countries/${country}${from ? `?from=${from}` : ""}`).then((r) => r.json());
+  return d.items.map((i) => ({ topic: i.topic, summary: i.summary, source: i.source_url }));
 }
 
 // ─── Usage examples ───────────────────────────────────────────────────────────
@@ -228,4 +309,22 @@ async function roadTripCostComparison(countryCodes) {
 
   console.log("\n=== Road trip: Germany, Turkey, Georgia ===");
   console.table(await roadTripCostComparison(["DE", "TR", "GE", "CZ", "PL"]));
+
+  console.log("\n=== Berlin → Prague: fuel and tolls ===");
+  console.log(await routeFuelCost(["Berlin", "Prague"]), await routeTolls(["Berlin", "Prague"]));
+
+  console.log("\n=== Visa: Russian passport → Turkey ===");
+  console.log(await visaCheck("RU", "TR"));
+
+  console.log("\n=== Plate А123ВС 799 ===");
+  console.log(await plateRegion("ru", "A123BC", "799"), plateImageUrl("ru", "A123BC", "799"));
+
+  console.log("\n=== France: peak traffic days, October–November ===");
+  console.table(await holidays("FR", "2026-10-01", "2026-11-15", "traffic"));
+
+  console.log("\n=== Turkey: hazards and plugs ===");
+  console.log(await travelHazards("TR"), await powerPlugs("TR"));
+
+  console.log("\n=== Customs Germany → Norway ===");
+  console.table(await customsRules("NO", "DE"));
 })();

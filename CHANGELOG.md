@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-02
+
+### Added
+- **Holidays API**: `/api/holidays/countries`, `/api/holidays/countries/{code}` — public holidays,
+  school holidays (regional, with ISO 3166-2 codes) and official peak traffic days, 212 countries.
+- **Travel hazards API**: `/api/hazards/countries/{code}` (UK FCDO advice level + current GDACS
+  disasters) and `/api/hazards/fires?bbox=` (NASA FIRMS fires of the last 48 hours).
+- **Power plugs API**: `/api/electricity/countries`, `/api/electricity/countries/{code}` — plug types,
+  voltage, frequency and campsite hook-up connector, 229 countries.
+- **Customs API**: `/api/customs/countries`, `/api/customs/countries/{code}?from=` — rules on entry by
+  car, each with a verbatim official quote and source link.
+- `/api/plates/{code}/types` — plate types of a country.
+- `openapi.yaml` regenerated — spec 1.6.0, 40 paths.
+- **MCP server v0.6.0** — five new read-only tools: `get_holidays`, `get_travel_hazards`,
+  `get_active_fires`, `get_power_plugs`, `get_customs_rules`, 25 tools total.
+- **SDK v1.1.0** — new resources `tolls`, `visa`, `plates`, `holidays`, `hazards`, `electricity`,
+  `customs`, plus `fuel.routeCost()`. `OpenVanError` now carries the API's message and `body`.
+- Examples cover every section of the API.
+
+### Fixed
+- **SDK `fuel.cheapest()` and all fuel examples** converted every grade with the country currency;
+  now they use the per-grade `currencies` map (Venezuela: diesel in USD, gasoline in VES), normalize
+  gallons to liters and skip currencies without a rate instead of comparing local prices as EUR.
+
 ## 2026-09-29
 
 ### Added

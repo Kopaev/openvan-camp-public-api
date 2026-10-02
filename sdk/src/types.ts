@@ -24,6 +24,11 @@ export interface FuelCountry {
   country_name: string;
   region?: string | null;
   currency: string;
+  /**
+   * Currency of each grade when it differs from `currency`
+   * (Venezuela: diesel in USD, gasoline in VES). Always prefer it over `currency`.
+   */
+  currencies?: Record<string, string>;
   /** "liter" or "gallon" */
   unit: string;
   prices: FuelPrices;
@@ -218,4 +223,65 @@ export interface StoriesListOptions {
 export interface VanSkyTopOptions {
   limit?: number;
   locale?: string;
+}
+
+// ─── Shared options ──────────────────────────────────────────────────────────
+
+/** Languages the API translates names into. */
+export type Locale = "en" | "ru" | "de" | "fr" | "es" | "pt" | "tr";
+
+// ─── Route fuel cost ─────────────────────────────────────────────────────────
+
+export interface RouteCostOptions {
+  /** Tank volume, litres. */
+  tank?: number;
+  /** Consumption, litres per 100 km. */
+  cons?: number;
+  fuel?: "diesel" | "gasoline" | "lpg";
+  /** ISO 4217 code for the total. */
+  currency?: string;
+  locale?: Locale;
+}
+
+// ─── Toll roads ──────────────────────────────────────────────────────────────
+
+/** car; van = campervan/motorhome up to 3.5 t (default); heavy = over 3.5 t. */
+export type TollVehicleClass = "car" | "van" | "heavy";
+
+// ─── Visa ────────────────────────────────────────────────────────────────────
+
+export interface VisaCheckOptions {
+  /** Vehicle weight class: le35 or gt35. */
+  weight?: "le35" | "gt35";
+  /** Vehicle plate origin for the vehicle rule. */
+  plate?: "eu" | "non_eu" | "eaeu" | "third";
+  locale?: Locale;
+}
+
+export interface VisaRouteOptions extends VisaCheckOptions {
+  /** Passports to answer for, up to 10. Defaults to the set matching locale. */
+  passports?: string[];
+}
+
+// ─── License plates ──────────────────────────────────────────────────────────
+
+export interface PlateImageOptions {
+  region?: string;
+  /** Plate type key from `plates.types()`. */
+  type?: string;
+  /** Draw any text, not only a number valid for the country. */
+  custom?: boolean;
+  format?: "svg" | "png";
+  /** PNG width, 200–2000 px. */
+  width?: number;
+}
+
+// ─── Holidays ────────────────────────────────────────────────────────────────
+
+export interface HolidaysOptions {
+  /** YYYY-MM-DD; the period is up to 400 days. */
+  from?: string;
+  to?: string;
+  kind?: "public" | "school" | "traffic";
+  locale?: Locale;
 }

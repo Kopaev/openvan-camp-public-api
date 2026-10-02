@@ -23,7 +23,7 @@ curl -s "$API/api/fuel/prices" | jq --arg c "$COUNTRY" '
   .data[$c] | {
     country: .country_name,
     diesel: .prices.diesel,
-    currency: .currency,
+    currency: (.currencies.diesel // .currency),
     unit: .unit,
     updated: .fetched_at,
     sources: .sources
@@ -39,7 +39,7 @@ curl -s "$API/api/fuel/prices" | jq '
   [
     .data[]
     | select(.region == "europe" and .prices.diesel != null)
-    | { country: .country_name, diesel: .prices.diesel, currency: .currency }
+    | { country: .country_name, diesel: .prices.diesel, currency: (.currencies.diesel // .currency) }
   ]
   | sort_by(.diesel)
   | .[0:5]

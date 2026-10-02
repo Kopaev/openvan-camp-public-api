@@ -25,7 +25,7 @@ async function printPriceSummary() {
   europeDiesel.slice(0, 10).forEach(c => {
     const change = c.price_changes.diesel;
     const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
-    console.log(`  ${c.country_name.padEnd(20)} ${c.prices.diesel.toFixed(3)} ${c.currency} ${arrow}`);
+    console.log(`  ${c.country_name.padEnd(20)} ${c.prices.diesel.toFixed(3)} ${c.currencies?.diesel ?? c.currency} ${arrow}`);
   });
 }
 
@@ -46,8 +46,9 @@ async function pricesInUSD(countryCodes) {
     const c = data[code];
     if (!c || c.prices.gasoline === null) continue;
 
-    // Convert to EUR, then to USD
-    const eurPrice = c.prices.gasoline / rates[c.currency];
+    // Convert to EUR, then to USD. A grade can have its own currency
+    // (Venezuela: diesel in USD, gasoline in VES) — always prefer `currencies`.
+    const eurPrice = c.prices.gasoline / rates[c.currencies?.gasoline ?? c.currency];
     let usdPrice = eurPrice * rates['USD'];
 
     // If country uses gallons, convert to liters
@@ -72,8 +73,8 @@ async function cheapLPG() {
     .filter(c => c.prices.lpg !== null && !c.is_excluded)
     .map(c => ({
       name: c.country_name,
-      lpgEur: c.prices.lpg / rates[c.currency],
-      currency: c.currency,
+      lpgEur: c.prices.lpg / rates[c.currencies?.lpg ?? c.currency],
+      currency: c.currencies?.lpg ?? c.currency,
       unit: c.unit,
     }))
     .sort((a, b) => a.lpgEur - b.lpgEur);

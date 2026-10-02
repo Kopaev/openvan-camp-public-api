@@ -9,7 +9,16 @@ import type {
   EventsListOptions,
   StoriesListOptions,
   VanSkyTopOptions,
+  Locale,
+  RouteCostOptions,
+  TollVehicleClass,
+  VisaCheckOptions,
+  VisaRouteOptions,
+  PlateImageOptions,
+  HolidaysOptions,
 } from "./types.js";
+
+const LITERS_PER_GALLON = 3.78541;
 
 /**
  * OpenVan.camp SDK — free vanlife/RV travel data.
@@ -23,6 +32,8 @@ import type {
  * const de = await ov.fuel.country("DE");
  * const weather = await ov.weather.score("FR");
  * const basket = await ov.basket.compare("DE", "TR");
+ * const visa = await ov.visa.check("RU", "TR");
+ * const tolls = await ov.tolls.route(["Rome", "Paris"]);
  * ```
  *
  * Docs: https://openvan.camp/docs
@@ -37,6 +48,13 @@ export class OpenVan {
   readonly weather: WeatherResource;
   readonly events: EventsResource;
   readonly stories: StoriesResource;
+  readonly tolls: TollsResource;
+  readonly visa: VisaResource;
+  readonly plates: PlatesResource;
+  readonly holidays: HolidaysResource;
+  readonly hazards: HazardsResource;
+  readonly electricity: ElectricityResource;
+  readonly customs: CustomsResource;
 
   constructor(options: OpenVanClientOptions = {}) {
     this.client = new OpenVanClient(options);
@@ -46,6 +64,13 @@ export class OpenVan {
     this.weather = new WeatherResource(this.client);
     this.events = new EventsResource(this.client);
     this.stories = new StoriesResource(this.client);
+    this.tolls = new TollsResource(this.client);
+    this.visa = new VisaResource(this.client);
+    this.plates = new PlatesResource(this.client);
+    this.holidays = new HolidaysResource(this.client);
+    this.hazards = new HazardsResource(this.client);
+    this.electricity = new ElectricityResource(this.client);
+    this.customs = new CustomsResource(this.client);
   }
 }
 
@@ -68,7 +93,11 @@ class FuelResource {
     return entry;
   }
 
-  /** Cheapest countries by fuel type, sorted cheapest-first (EUR-normalized). */
+  /**
+   * Cheapest countries by fuel type, sorted cheapest-first in EUR per liter.
+   * Each grade is converted with its own currency (`currencies`), gallon prices are
+   * normalized to liters, and countries whose currency has no rate are left out.
+   */
   async cheapest(
     fuelType: "gasoline" | "diesel" | "lpg" | "cng" = "diesel",
     limit = 10
@@ -81,19 +110,27 @@ class FuelResource {
         .catch(() => ({} as Record<string, number>)),
     ]);
 
+    const eurPerLiter = (c: FuelCountry): number => {
+      const p = c.prices[fuelType];
+      if (p == null) return NaN;
+      const currency = (c.currencies?.[fuelType] ?? c.currency).toUpperCase();
+      const rate = currency === "EUR" ? 1 : rates[currency];
+      if (!rate) return NaN;
+      const eur = p / rate;
+      return c.unit.toLowerCase().includes("gal") ? eur / LITERS_PER_GALLON : eur;
+    };
+
     return Object.values(prices)
-      .filter((c) => c.prices[fuelType] != null)
-      .sort((a, b) => {
-        const toEur = (c: FuelCountry) => {
-          const p = c.prices[fuelType];
-          if (p == null) return Infinity;
-          if (c.currency.toUpperCase() === "EUR") return p;
-          const rate = rates[c.currency.toUpperCase()];
-          return rate ? p / rate : p;
-        };
-        return toEur(a) - toEur(b);
-      })
-      .slice(0, limit);
+      .map((c) => ({ c, eur: eurPerLiter(c) }))
+      .filter((x) => !isNaN(x.eur))
+      .sort((a, b) => a.eur - b.eur)
+      .slice(0, limit)
+      .map((x) => x.c);
+  }
+
+  /** Fuel cost for a route of 2–10 place names, with per-country prices along the way. */
+  async routeCost(waypoints: string[], options: RouteCostOptions = {}): Promise<unknown> {
+    return this.client.post("/api/route-cost", { waypoints, ...options });
   }
 }
 
@@ -240,5 +277,198 @@ class StoriesResource {
   /** Get a single story with all source articles. */
   async get(slug: string): Promise<unknown> {
     return this.client.get(`/api/story/${slug}`);
+  }
+}
+
+// ─── Toll roads ──────────────────────────────────────────────────────────────
+
+class TollsResource {
+  constructor(private readonly client: OpenVanClient) {}
+
+  /** Countries with toll data: payment system, per-km rates by vehicle class, vignettes. */
+  async countries(locale?: Locale): Promise<unknown> {
+    return this.client.get("/api/tolls/countries", { locale });
+  }
+
+  /** Toll reference for one country: rates, vignettes, concession sections, bridges and tunnels. */
+  async country(code: string, locale?: Locale): Promise<unknown> {
+    return this.client.get(`/api/tolls/countries/${code.toUpperCase()}`, { locale });
+  }
+
+  /**
+   * Toll cost for a route of 2–10 place names as a EUR range.
+   * Check `partial` and `unknown_countries`: a country without data is not a free country.
+   */
+  async route(
+    waypoints: string[],
+    vehicleClass: TollVehicleClass = "van",
+    locale?: Locale
+  ): Promise<unknown> {
+    return this.client.get("/api/tolls/route", {
+      waypoints: waypoints.join("|"),
+      vehicle_class: vehicleClass,
+      locale,
+    });
+  }
+}
+
+// ─── Visa ────────────────────────────────────────────────────────────────────
+
+class VisaResource {
+  constructor(private readonly client: OpenVanClient) {}
+
+  /** Entry rules for one passport and destination: entry mode, length of stay, how days are counted. */
+  async check(passport: string, destination: string, options: VisaCheckOptions = {}): Promise<unknown> {
+    return this.client.get("/api/visa/check", {
+      passport: passport.toUpperCase(),
+      destination: destination.toUpperCase(),
+      weight: options.weight,
+      plate: options.plate,
+      locale: options.locale,
+    });
+  }
+
+  /** Visa rules for a whole route (up to 12 countries in travel order) and up to 10 passports. */
+  async route(countries: string[], options: VisaRouteOptions = {}): Promise<unknown> {
+    return this.client.get("/api/visa/route", {
+      t: countries.join(","),
+      p: options.passports?.join(","),
+      w: options.weight,
+      plate: options.plate,
+      locale: options.locale,
+    });
+  }
+
+  /** All destinations for one passport. */
+  async passport(code: string, locale?: Locale): Promise<unknown> {
+    return this.client.get(`/api/visa/passport/${code.toUpperCase()}`, { locale });
+  }
+
+  /** Temporary import rules for a foreign-plated vehicle in a country. */
+  async vehicle(place: string, locale?: Locale): Promise<unknown> {
+    return this.client.get(`/api/visa/vehicle/${encodeURIComponent(place)}`, { locale });
+  }
+}
+
+// ─── License plates ──────────────────────────────────────────────────────────
+
+class PlatesResource {
+  constructor(private readonly client: OpenVanClient) {}
+
+  /** Countries with license plate data: international code, regions, example plate. */
+  async list(locale?: Locale): Promise<unknown> {
+    return this.client.get("/api/plates", { locale });
+  }
+
+  /** Plate format and every region code of one country. */
+  async country(code: string, locale?: Locale): Promise<unknown> {
+    return this.client.get(`/api/plates/${code.toLowerCase()}`, { locale });
+  }
+
+  /** Plate types (private, taxi, diplomatic…). Empty for countries without a breakdown. */
+  async types(code: string, locale?: Locale): Promise<unknown> {
+    return this.client.get(`/api/plates/${code.toLowerCase()}/types`, { locale });
+  }
+
+  /** Validate a plate number and resolve its region code. */
+  async validate(
+    code: string,
+    number: string,
+    options: { region?: string; type?: string; locale?: Locale } = {}
+  ): Promise<unknown> {
+    return this.client.get(`/api/plates/${code.toLowerCase()}/validate`, { number, ...options });
+  }
+
+  /** A random valid plate with image URLs. */
+  async random(code: string, type?: string): Promise<unknown> {
+    return this.client.get(`/api/plates/${code.toLowerCase()}/random`, { type });
+  }
+
+  /** URL of a ready plate image — put it straight into `<img src>`. No request is made. */
+  imageUrl(code: string, number: string, options: PlateImageOptions = {}): string {
+    const format = options.format ?? "svg";
+    return this.client.url(`/api/plates/${code.toLowerCase()}/plate.${format}`, {
+      number,
+      region: options.region,
+      type: options.type,
+      custom: options.custom ? 1 : undefined,
+      width: format === "png" ? options.width : undefined,
+    });
+  }
+}
+
+// ─── Holidays ────────────────────────────────────────────────────────────────
+
+class HolidaysResource {
+  constructor(private readonly client: OpenVanClient) {}
+
+  /** Countries with holiday data. */
+  async countries(locale?: Locale): Promise<unknown> {
+    return this.client.get("/api/holidays/countries", { locale });
+  }
+
+  /**
+   * Public holidays, school holidays (with ISO 3166-2 regions) and peak traffic days.
+   * A country without data throws — that is not the same as "no holidays".
+   */
+  async country(code: string, options: HolidaysOptions = {}): Promise<unknown> {
+    return this.client.get(`/api/holidays/countries/${code.toUpperCase()}`, { ...options });
+  }
+}
+
+// ─── Travel hazards ──────────────────────────────────────────────────────────
+
+class HazardsResource {
+  constructor(private readonly client: OpenVanClient) {}
+
+  /** UK FCDO travel advice level and current GDACS natural disasters in a country. Not a forecast. */
+  async country(code: string, locale?: Locale): Promise<unknown> {
+    return this.client.get(`/api/hazards/countries/${code.toUpperCase()}`, { locale });
+  }
+
+  /**
+   * NASA FIRMS fire detections of the last 48 hours in a bounding box up to 10°×10°.
+   * A new area may answer 503 "being loaded, retry in a minute".
+   */
+  async fires(bbox: [minLon: number, minLat: number, maxLon: number, maxLat: number]): Promise<unknown> {
+    return this.client.get("/api/hazards/fires", { bbox: bbox.join(",") });
+  }
+}
+
+// ─── Power plugs ─────────────────────────────────────────────────────────────
+
+class ElectricityResource {
+  constructor(private readonly client: OpenVanClient) {}
+
+  /** Plug types and mains voltage of every country. */
+  async countries(locale?: Locale): Promise<unknown> {
+    return this.client.get("/api/electricity/countries", { locale });
+  }
+
+  /** Plug types (IEC A–N), voltage, frequency and campsite hook-up connector of one country. */
+  async country(code: string, locale?: Locale): Promise<unknown> {
+    return this.client.get(`/api/electricity/countries/${code.toUpperCase()}`, { locale });
+  }
+}
+
+// ─── Customs ─────────────────────────────────────────────────────────────────
+
+class CustomsResource {
+  constructor(private readonly client: OpenVanClient) {}
+
+  /** Customs jurisdictions and blocs. */
+  async countries(locale?: Locale): Promise<unknown> {
+    return this.client.get("/api/customs/countries", { locale });
+  }
+
+  /**
+   * Customs rules on entry by car, optionally from a given country, each with an official quote.
+   * A country without data throws — that is not the same as "nothing is restricted".
+   */
+  async country(code: string, options: { from?: string; locale?: Locale } = {}): Promise<unknown> {
+    return this.client.get(`/api/customs/countries/${code.toUpperCase()}`, {
+      from: options.from?.toUpperCase(),
+      locale: options.locale,
+    });
   }
 }
