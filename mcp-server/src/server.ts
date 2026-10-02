@@ -54,8 +54,17 @@ import {
   getTollRates,
   getTollRatesInput,
 } from "./tools/tolls.js";
+import { getHolidays, getHolidaysInput } from "./tools/holidays.js";
+import {
+  getActiveFires,
+  getActiveFiresInput,
+  getTravelHazards,
+  getTravelHazardsInput,
+} from "./tools/hazards.js";
+import { getPowerPlugs, getPowerPlugsInput } from "./tools/electricity.js";
+import { getCustomsRules, getCustomsRulesInput } from "./tools/customs.js";
 
-// Все 20 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
+// Все 25 tools — read-only HTTP GET к openvan.camp. Ни один не меняет состояние,
 // не пишет данные, не удаляет записи. Annotations транслируются в UI хостов
 // (ChatGPT: DEV > Приложения, Claude Desktop, Cursor) — без них SDK проставляет
 // MCP defaults (destructiveHint=true), и хосты помечают нас как "разрушительные".
@@ -289,6 +298,69 @@ export function createServer(): McpServer {
       annotations: readOnlyAnnotations("Estimate Tolls For A Route"),
     },
     withAttribution(estimateRouteTolls)
+  );
+
+  // Holidays & peak traffic
+  server.registerTool(
+    "get_holidays",
+    {
+      title: "Holidays And Peak Traffic Days",
+      description:
+        "Public holidays, school holidays (often regional, with ISO 3166-2 region codes) and official peak traffic days (France, Bison Futé) in one country for a period of up to 400 days. A country without data returns an error saying so — never present that as \"no holidays\".",
+      inputSchema: getHolidaysInput,
+      annotations: readOnlyAnnotations("Holidays And Peak Traffic Days"),
+    },
+    withAttribution(getHolidays)
+  );
+
+  // Travel hazards
+  server.registerTool(
+    "get_travel_hazards",
+    {
+      title: "Travel Hazards In A Country",
+      description:
+        "Situation now in one country: UK FCDO travel advice level and current GDACS natural disasters (flood, earthquake, tropical cyclone, wildfire, drought, volcano) with alert level green/orange/red. Not a forecast.",
+      inputSchema: getTravelHazardsInput,
+      annotations: readOnlyAnnotations("Travel Hazards In A Country"),
+    },
+    withAttribution(getTravelHazards)
+  );
+  server.registerTool(
+    "get_active_fires",
+    {
+      title: "Active Fires In An Area",
+      description:
+        "NASA FIRMS VIIRS satellite fire detections of the last 48 hours in a bounding box up to 10°×10°, strongest first, with fire radiative power in MW.",
+      inputSchema: getActiveFiresInput,
+      annotations: readOnlyAnnotations("Active Fires In An Area"),
+    },
+    withAttribution(getActiveFires)
+  );
+
+  // Power plugs & electricity
+  server.registerTool(
+    "get_power_plugs",
+    {
+      title: "Power Plugs And Voltage",
+      description:
+        "Plug types (IEC A–N), mains voltage and frequency for one country, with the source of the value, plus the campsite hook-up connector in Europe (CEE17).",
+      inputSchema: getPowerPlugsInput,
+      annotations: readOnlyAnnotations("Power Plugs And Voltage"),
+    },
+    withAttribution(getPowerPlugs)
+  );
+
+  // Customs
+  server.registerTool(
+    "get_customs_rules",
+    {
+      title: "Customs Rules On Entry By Car",
+      description:
+        "Customs rules when driving into a country, optionally from a given country: food bans, cash declaration, alcohol and tobacco limits, goods value, fuel in a canister. Each rule carries a verbatim official quote and source link. A country without data returns an error saying so — never present that as \"nothing is restricted\".",
+      inputSchema: getCustomsRulesInput,
+      annotations: readOnlyAnnotations("Customs Rules On Entry By Car"),
+    },
+    withAttribution(getCustomsRules)
   );
 
   // License plates of the world

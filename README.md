@@ -1,6 +1,6 @@
 # OpenVan.camp Public API
 
-Free, no-auth API for vanlife data: fuel prices, route fuel cost, currency rates, food cost index, weather suitability scores, visa and vehicle-import rules, vanlife events, news stories, and license plates of the world — all in one place, no registration required.
+Free, no-auth API for vanlife data: fuel prices, route fuel cost, toll roads, holidays and peak traffic days, travel hazards, power plugs, customs rules, currency rates, food cost index, weather suitability scores, visa and vehicle-import rules, vanlife events, news stories, and license plates of the world — all in one place, no registration required.
 
 **Base URL:** `https://openvan.camp`  
 **Auth:** None required  
@@ -9,7 +9,7 @@ Free, no-auth API for vanlife data: fuel prices, route fuel cost, currency rates
 
 **JavaScript/TypeScript SDK:** [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) — `npm install @openvancamp/sdk`. Zero-config, typed, Node.js / browser / edge. [SDK docs →](./sdk/README.md)
 
-**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 20 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
+**MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 25 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
 
 **Gemini CLI extension:** install this repository with `gemini extensions install https://github.com/openvancamp/openvan-camp-public-api`. The root [`gemini-extension.json`](./gemini-extension.json) connects Gemini CLI directly to the hosted OpenVan MCP server; no API key is required.
 
@@ -38,6 +38,11 @@ The OpenAPI spec at `/docs.openapi` is generated from the live codebase and is t
 | `POST /api/route-cost` | Fuel cost for a route of 2–10 waypoints, per-country prices | — |
 | `GET /api/tolls/countries` | Toll roads by country: payment system, per-km rates by vehicle class, vignettes | 84 countries |
 | `GET /api/tolls/route` | Toll cost for a route of 2–10 place names (car, van, heavy), EUR range | — |
+| `GET /api/holidays/countries/{code}?from=&to=` | Public holidays, school holidays (regional) and peak traffic days | 212 countries |
+| `GET /api/hazards/countries/{code}` | UK FCDO travel advice level and current GDACS natural disasters | — |
+| `GET /api/hazards/fires?bbox=` | NASA FIRMS active fires of the last 48 hours in a bounding box (up to 10°×10°) | worldwide |
+| `GET /api/electricity/countries/{code}` | Plug types, mains voltage and frequency, campsite hook-up (CEE17) | 229 countries |
+| `GET /api/customs/countries/{code}?from=` | Customs rules on entry by car: food, cash, alcohol, tobacco, fuel canister | — |
 | `GET /api/currency/rates` | Exchange rates relative to EUR | 150+ currencies |
 | `GET /api/vanbasket/countries` | Food price index relative to world average (100 = world avg) | 90+ countries |
 | `GET /api/vanbasket/compare?from=DE&to=TR` | Compare food costs between two countries | — |
@@ -55,6 +60,7 @@ The OpenAPI spec at `/docs.openapi` is generated from the live codebase and is t
 | `GET /api/story/{slug}` | Full story with all source articles and direct links | — |
 | `GET /api/news/search?q=...` | Semantic search over stories | — |
 | `GET /api/plates` | License plates of the world: formats, region codes, example plates | 199 countries |
+| `GET /api/plates/{code}/types` | Plate types of a country (private, taxi, motorcycle, diplomatic…); empty where not broken down | — |
 | `GET /api/plates/{code}/plate.svg` | Ready plate image (also `.png`) — drop into `<img src>` | — |
 
 ---
@@ -365,6 +371,35 @@ To draw plates in the browser yourself (e.g. an interactive generator), load the
 Images and the engine are available for countries whose plate typeface may be redistributed
 (`glyphs_license`: `free` or `sharealike`); for the rest the data endpoints still work.
 Rate limit: 60 requests/minute for images and `/random`, 120 for the rest.
+
+---
+
+## Holidays, Hazards, Power Plugs, Customs
+
+Trip-planning data for a country you are about to drive into. Every list endpoint has a
+`/countries` index; pass `locale` for translated names.
+
+```bash
+# Public, school (with ISO 3166-2 regions) and peak traffic days; kind=public|school|traffic
+curl "https://openvan.camp/api/holidays/countries/FR?from=2026-10-01&to=2026-11-15"
+
+# FCDO travel advice level + current GDACS disasters (flood, earthquake, cyclone, wildfire…)
+curl https://openvan.camp/api/hazards/countries/TR
+
+# NASA FIRMS fire detections of the last 48 h; bbox = minLon,minLat,maxLon,maxLat, up to 10°×10°
+curl "https://openvan.camp/api/hazards/fires?bbox=-1,38,1,40"
+
+# Plug types, voltage, frequency, campsite hook-up connector
+curl https://openvan.camp/api/electricity/countries/GB
+
+# Customs rules on entry by car, optionally from a given country; each rule quotes the official source
+curl "https://openvan.camp/api/customs/countries/NO?from=DE"
+```
+
+- A country without holiday or customs data returns an error that says so — it does **not** mean
+  "no holidays" or "nothing is restricted"
+- Hazards describe the situation now, not a forecast; fire data for a new area may return
+  "being loaded, retry in a minute" on the first request
 
 ---
 

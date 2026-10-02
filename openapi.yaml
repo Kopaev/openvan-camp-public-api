@@ -6,13 +6,17 @@ info:
   title: OpenVan.camp AI Public API
   description: 'Curated read-only OpenAPI schema for AI agents. Use this API to retrieve current vanlife
     news stories, source articles, events, fuel prices, route fuel cost, toll roads (per-km rates, vignettes,
-    toll bridges and tunnels, route toll estimate), visa and border rules (including temporary vehicle
-    import), currency rates, VanBasket food price index data, VanSky weather suitability data, and license
-    plates of the world (formats, region codes, validation, ready SVG/PNG plate images). No authentication
-    is required. Data is CC BY 4.0 and should be attributed to OpenVan.camp. Rate limit: 120 requests/minute
-    per IP, except POST /api/route-cost at 30/minute and GET /api/tolls/route at 20/minute (see X-RateLimit-Limit
-    and X-RateLimit-Remaining response headers). Pass `?source=<integration-domain>` for attribution tracking.'
-  version: 1.4.0
+    toll bridges and tunnels, route toll estimate), public and school holidays with peak traffic days,
+    travel hazards (UK FCDO travel advice level, GDACS natural disasters, NASA FIRMS active fires), power
+    plugs and mains voltage by country (with campsite hook-up connector), customs rules on entry by car
+    (verbatim official quotes), visa and border rules (including temporary vehicle import), currency rates,
+    VanBasket food price index data, VanSky weather suitability data, and license plates of the world
+    (formats, region codes, validation, ready SVG/PNG plate images). No authentication is required. Data
+    is CC BY 4.0 and should be attributed to OpenVan.camp. Rate limit: 120 requests/minute per IP, except
+    POST /api/route-cost at 30/minute, GET /api/hazards/fires at 30/minute and GET /api/tolls/route at
+    20/minute (see X-RateLimit-Limit and X-RateLimit-Remaining response headers). Pass `?source=<integration-domain>`
+    for attribution tracking.'
+  version: 1.6.0
   termsOfService: https://openvan.camp/en/terms
   contact:
     name: OpenVan.camp
@@ -34,6 +38,7 @@ info:
       GET /api/plates/{code}/plate.svg: 60 requests/minute
       GET /api/plates/{code}/plate.png: 60 requests/minute
       GET /api/tolls/route: 20 requests/minute
+      GET /api/hazards/fires: 30 requests/minute
   x-attribution:
     required: false
     recommended: true
@@ -55,6 +60,17 @@ tags:
   description: Current retail fuel prices by country.
 - name: Toll Roads
   description: Toll road reference by country and toll cost estimates for a route.
+- name: Holidays
+  description: Public holidays, school holidays by region and official peak traffic days by country.
+- name: Travel Hazards
+  description: 'Current travel situation: UK FCDO travel advice level, GDACS natural disasters and NASA
+    FIRMS active fires. Situation now, not a forecast.'
+- name: Electricity
+  description: Power plug types (IEC A–N), mains voltage and frequency by country, plus the campsite hook-up
+    connector in Europe.
+- name: Customs
+  description: 'Customs rules on entry by car: banned goods, cash declaration, alcohol, tobacco, fuel
+    in a canister — each with a verbatim official quote and source.'
 - name: Currency Rates
   description: Exchange rates relative to EUR.
 - name: VanBasket
@@ -654,6 +670,238 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/holidays/countries:
+    get:
+      tags:
+      - Holidays
+      operationId: getHolidayCountries
+      summary: List countries with holiday data
+      description: 'Coverage by country and kind: `public` — public holidays (Nager.Date, 200+ countries),
+        `school` — school holidays by region (OpenHolidays API, ~30 countries), `traffic` — official peak
+        traffic forecast days (France, Bison Futé).'
+      parameters:
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Holiday coverage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolidayCountriesResponse'
+  /api/holidays/countries/{code}:
+    get:
+      tags:
+      - Holidays
+      operationId: getHolidays
+      summary: Get holidays of one country for a period
+      description: 'Public holidays, school holidays and peak traffic days in date order. School holidays
+        are often regional: `nationwide=false` and `regions` lists ISO 3166-2 codes. For `traffic`, `details`
+        holds the day colour for departures and returns (green, orange, red, black). A country without
+        data returns 404 with `covered=false` — that means no data, not "no holidays".'
+      parameters:
+      - $ref: '#/components/parameters/CountryCode'
+      - name: from
+        in: query
+        required: false
+        description: Start of the period, YYYY-MM-DD. Defaults to today.
+        schema:
+          type: string
+          format: date
+        example: '2026-07-01'
+      - name: to
+        in: query
+        required: false
+        description: End of the period, YYYY-MM-DD. Defaults to from + 90 days; at most 400 days after
+          from.
+        schema:
+          type: string
+          format: date
+        example: '2026-08-31'
+      - name: kind
+        in: query
+        required: false
+        description: Only one kind of entries.
+        schema:
+          type: string
+          enum:
+          - public
+          - school
+          - traffic
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Holidays for the period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolidaysResponse'
+        '404':
+          description: No holiday data for this country (covered=false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolidaysResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /api/hazards/countries/{code}:
+    get:
+      tags:
+      - Travel Hazards
+      operationId: getTravelHazards
+      summary: Get travel advice level and current disasters in a country
+      description: 'UK FCDO travel advice level (`advisory.level`, mildest to strictest: none, avoid_all_but_essential_travel_to_parts,
+        avoid_all_but_essential_travel_to_whole_country, avoid_all_travel_to_parts, avoid_all_travel_to_whole_country)
+        and current GDACS disasters: `type` FL flood, EQ earthquake, TC tropical cyclone, WF wildfire,
+        DR drought, VO volcano; `alert_level` green / orange / red. Situation now, not a forecast.'
+      parameters:
+      - $ref: '#/components/parameters/CountryCode'
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Travel hazards
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HazardsCountryResponse'
+  /api/hazards/fires:
+    get:
+      tags:
+      - Travel Hazards
+      operationId: getActiveFires
+      summary: Get active fires in a bounding box
+      description: 'NASA FIRMS VIIRS satellite fire detections (NOAA-20, Suomi NPP) for the last 48 hours,
+        low-confidence points excluded. `frp` is fire radiative power in MW: single digits — a small fire
+        or a flare, tens and hundreds — a real wildfire. Box up to 10°×10°. Rate limit 30 requests/minute.'
+      parameters:
+      - name: bbox
+        in: query
+        required: true
+        description: west,south,east,north in degrees; at most 10° on each side.
+        schema:
+          type: string
+        example: 29,36,33,38
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Active fires
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiresResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '503':
+          description: NASA FIRMS is not responding, try later
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/electricity/countries:
+    get:
+      tags:
+      - Electricity
+      operationId: getElectricityCountries
+      summary: List power plugs and mains voltage by country
+      description: Plug types by IEC letter (A–N), nominal voltage (V) and frequency (Hz) for 220+ countries,
+        plus the campsite hook-up connector in Europe (CEE17, the blue three-pin 16 A socket).
+      parameters:
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Electricity by country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElectricityCountriesResponse'
+  /api/electricity/countries/{code}:
+    get:
+      tags:
+      - Electricity
+      operationId: getElectricityCountry
+      summary: Get power plugs and mains voltage of one country
+      description: Plug types, voltage and frequency with the source of the value (Wikipedia article revision)
+        and the Wikidata answer for cross-checking, plus campsite hook-up info.
+      parameters:
+      - $ref: '#/components/parameters/CountryCode'
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Electricity of one country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ElectricityCountryResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/customs/countries:
+    get:
+      tags:
+      - Customs
+      operationId: getCustomsCatalog
+      summary: List customs jurisdictions and blocs
+      description: Customs blocs (EU, EAEU) with member countries, and jurisdictions that have rules with
+        their topics. Bloc rules apply to every member when entering from outside the bloc.
+      parameters:
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Customs catalog
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomsCatalogResponse'
+  /api/customs/countries/{code}:
+    get:
+      tags:
+      - Customs
+      operationId: getCustomsRules
+      summary: Get customs rules on entry into a country by car
+      description: 'Rules of the country and its bloc: banned goods, cash declaration, alcohol, tobacco,
+        goods value, fuel in a canister. Each item carries a verbatim quote of the official source, its
+        URL and the check date. With `from`, rules account for where you come from: no customs inside
+        the EU, and the EU meat and dairy ban does not apply to travellers from Switzerland, Norway, Iceland,
+        Andorra, San Marino and Liechtenstein. A country without data returns 404 with `covered=false`
+        — that means no data, not "nothing is restricted".'
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ISO 3166-1 alpha-2 code of the country you enter.
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 2
+        example: PL
+      - name: from
+        in: query
+        required: false
+        description: ISO 3166-1 alpha-2 code of the country you are coming from.
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 2
+        example: UA
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Customs rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomsCountryResponse'
+        '404':
+          description: No customs data for this country (covered=false)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomsCountryResponse'
   /api/visa/check:
     get:
       tags:
@@ -966,6 +1214,35 @@ paths:
                 $ref: '#/components/schemas/LicensePlateCountryResponse'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/plates/{code}/types:
+    get:
+      tags:
+      - License Plates
+      operationId: listLicensePlateTypes
+      summary: List plate types
+      description: Divisions of the country's plates — private, taxi, motorcycle, diplomatic and so on
+        — each with its own example, colors and size where they differ from the standard passport. Countries
+        without a breakdown return an empty list.
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ISO 3166-1 alpha-2 country code, e.g. th.
+        schema:
+          type: string
+          pattern: ^[A-Za-z]{2}$
+        example: th
+      - $ref: '#/components/parameters/Locale'
+      - $ref: '#/components/parameters/Source'
+      responses:
+        '200':
+          description: Plate types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicensePlateTypesResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/plates/{code}/validate:
     get:
       tags:
@@ -999,6 +1276,13 @@ paths:
           type: string
           maxLength: 32
         example: '77'
+      - name: type
+        in: query
+        description: Plate type key from GET /api/plates/{code}/types (e.g. taxi). Default type if omitted;
+          unknown key returns 422 invalid_type.
+        schema:
+          type: string
+        example: taxi
       - $ref: '#/components/parameters/Locale'
       - $ref: '#/components/parameters/Source'
       responses:
@@ -1010,6 +1294,12 @@ paths:
                 $ref: '#/components/schemas/LicensePlateValidateResponse'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          description: Unknown plate type (see GET /api/plates/{code}/types)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/plates/{code}/random:
     get:
       tags:
@@ -1027,6 +1317,13 @@ paths:
           type: string
           pattern: ^[A-Za-z]{2}$
         example: ru
+      - name: type
+        in: query
+        description: Plate type key from GET /api/plates/{code}/types (e.g. taxi). Default type if omitted;
+          unknown key returns 422 invalid_type.
+        schema:
+          type: string
+        example: taxi
       - $ref: '#/components/parameters/Source'
       responses:
         '200':
@@ -1037,6 +1334,12 @@ paths:
                 $ref: '#/components/schemas/LicensePlateRandomResponse'
         '404':
           $ref: '#/components/responses/NotFound'
+        '422':
+          description: Unknown plate type (see GET /api/plates/{code}/types)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/plates/{code}/plate.svg:
     get:
       tags:
@@ -1078,6 +1381,13 @@ paths:
         schema:
           type: boolean
           default: false
+      - name: type
+        in: query
+        description: Plate type key from GET /api/plates/{code}/types (e.g. taxi). Default type if omitted;
+          unknown key returns 422 invalid_type.
+        schema:
+          type: string
+        example: taxi
       - name: v
         in: query
         description: Engine version from image URLs returned by the API. Images are cached as immutable;
@@ -1101,7 +1411,8 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
-          description: Number does not match the country format (pass custom=1 to draw any text)
+          description: Number does not match the country format (pass custom=1 to draw any text), or unknown
+            type (see GET /api/plates/{code}/types)
           content:
             application/json:
               schema:
@@ -1153,6 +1464,13 @@ paths:
           minimum: 200
           maximum: 2000
           default: 800
+      - name: type
+        in: query
+        description: Plate type key from GET /api/plates/{code}/types (e.g. taxi). Default type if omitted;
+          unknown key returns 422 invalid_type.
+        schema:
+          type: string
+        example: taxi
       - name: v
         in: query
         description: Engine version from image URLs returned by the API. Images are cached as immutable;
@@ -1176,7 +1494,8 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
-          description: Number does not match the country format (pass custom=1 to draw any text)
+          description: Number does not match the country format (pass custom=1 to draw any text), or unknown
+            type (see GET /api/plates/{code}/types)
           content:
             application/json:
               schema:
@@ -2049,6 +2368,12 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/LicensePlateRegion'
+          types:
+            type: array
+            description: Plate type breakdown (private, taxi, motorcycle…); empty for countries without
+              one.
+            items:
+              $ref: '#/components/schemas/LicensePlateType'
           sources:
             type: array
             items:
@@ -2071,6 +2396,69 @@ components:
                 type: string
               usage:
                 type: string
+    LicensePlateType:
+      type: object
+      description: A plate type/division of the country (see PLATE_TYPES.md taxonomy of classes).
+      properties:
+        key:
+          type: string
+          description: Country-specific key, unique within the country.
+          example: taxi
+        class:
+          type: string
+          description: 'Shared taxonomy class: private, taxi, commercial, bus, motorcycle, motorcycle_taxi,
+            rental, trailer, diplomatic, temporary, test, vanity, international, government, police, military,
+            historic.'
+          example: taxi
+        is_default:
+          type: boolean
+          description: Type drawn by default (exactly one per country).
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        colors:
+          type: object
+          nullable: true
+          properties:
+            text:
+              type: string
+            background:
+              type: string
+            border:
+              type: string
+        size_mm:
+          type: array
+          nullable: true
+          items:
+            type: number
+          example:
+          - 340
+          - 150
+        format:
+          type: string
+          nullable: true
+          example: กข 1234 / province
+        example:
+          $ref: '#/components/schemas/LicensePlate'
+    LicensePlateTypesResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LicensePlateType'
+        meta:
+          type: object
+          properties:
+            api_version:
+              type: integer
+              example: 1
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
     LicensePlatesCatalogResponse:
       type: object
       properties:
@@ -2443,5 +2831,487 @@ components:
               source_url:
                 type: string
                 format: uri
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    HolidayCountriesResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        kinds:
+          type: array
+          items:
+            type: string
+        countries:
+          type: array
+          items:
+            type: object
+            properties:
+              country_code:
+                type: string
+              name:
+                type: string
+              public:
+                type: boolean
+              school:
+                type: boolean
+              traffic:
+                type: boolean
+              sources:
+                type: array
+                items:
+                  type: string
+        upstream:
+          type: array
+          description: Primary sources of the dataset and their licenses.
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              name:
+                type: string
+              url:
+                type: string
+                format: uri
+              license:
+                type: string
+                nullable: true
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    HolidayItem:
+      type: object
+      properties:
+        country_code:
+          type: string
+        kind:
+          type: string
+          enum:
+          - public
+          - school
+          - traffic
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        name:
+          type: string
+          description: Name in the requested locale.
+        name_en:
+          type: string
+          nullable: true
+        name_local:
+          type: string
+          nullable: true
+        category:
+          type: string
+          nullable: true
+          description: 'School: holiday season (e.g. autumn). Traffic: worst colour of the day.'
+        nationwide:
+          type: boolean
+        regions:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+                example: DE-HE
+              name:
+                type: string
+        details:
+          type: object
+          nullable: true
+          description: 'For traffic days: {departure, return} colours green/orange/red/black.'
+        source:
+          type: string
+          enum:
+          - nager
+          - openholidays
+          - bisonfute
+        source_url:
+          type: string
+          format: uri
+    HolidaysResponse:
+      type: object
+      properties:
+        country_code:
+          type: string
+        name:
+          type: string
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        covered:
+          type: boolean
+          description: false = no data for this country (HTTP 404), not "no holidays".
+        count:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HolidayItem'
+        upstream:
+          type: array
+          description: Primary sources of the dataset and their licenses.
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              name:
+                type: string
+              url:
+                type: string
+                format: uri
+              license:
+                type: string
+                nullable: true
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    HazardEvent:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - FL
+          - EQ
+          - TC
+          - WF
+          - DR
+          - VO
+        alert_level:
+          type: string
+          enum:
+          - green
+          - orange
+          - red
+        name:
+          type: string
+        country_code:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+          nullable: true
+        severity:
+          type: string
+          nullable: true
+        url:
+          type: string
+          format: uri
+        source:
+          type: string
+          example: gdacs
+    HazardsCountryResponse:
+      type: object
+      properties:
+        country_code:
+          type: string
+        name:
+          type: string
+        advisory:
+          type: object
+          nullable: true
+          properties:
+            level:
+              type: string
+            severity:
+              type: integer
+              description: 0 (none) to 4 (avoid all travel to the whole country).
+            url:
+              type: string
+              format: uri
+            updated_at:
+              type: string
+              format: date
+            summary:
+              type: string
+              nullable: true
+            source:
+              type: string
+              example: fcdo
+        advisory_levels:
+          type: array
+          items:
+            type: string
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/HazardEvent'
+        upstream:
+          type: array
+          description: Primary sources of the dataset and their licenses.
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              name:
+                type: string
+              url:
+                type: string
+                format: uri
+              license:
+                type: string
+                nullable: true
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    FiresResponse:
+      type: object
+      properties:
+        bbox:
+          type: array
+          items:
+            type: number
+        count:
+          type: integer
+        fires:
+          type: array
+          items:
+            type: object
+            properties:
+              lat:
+                type: number
+              lng:
+                type: number
+              frp:
+                type: number
+                description: Fire radiative power, MW.
+              seen_at:
+                type: string
+                format: date-time
+              confidence:
+                type: string
+                description: n = nominal, h = high.
+        upstream:
+          type: array
+          description: Primary sources of the dataset and their licenses.
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              name:
+                type: string
+              url:
+                type: string
+                format: uri
+              license:
+                type: string
+                nullable: true
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    ElectricityCountry:
+      type: object
+      properties:
+        country_code:
+          type: string
+        name:
+          type: string
+        plugs:
+          type: array
+          items:
+            type: string
+            example: F
+          description: IEC plug type letters A–N.
+        voltage:
+          type: integer
+          description: Nominal voltage, V.
+        frequency:
+          type: integer
+          description: Hz.
+    ElectricityCampsites:
+      type: object
+      description: Campsite hook-up in Europe.
+      properties:
+        scope:
+          type: string
+          example: europe
+        connector:
+          type: string
+          example: CEE17
+        share_percent:
+          type: integer
+        amps:
+          type: array
+          items:
+            type: integer
+          description: Typical current range, A.
+        reversed_polarity_common:
+          type: boolean
+        source:
+          type: object
+          properties:
+            name:
+              type: string
+            url:
+              type: string
+              format: uri
+            checked:
+              type: string
+              format: date
+        countries:
+          type: array
+          items:
+            type: string
+    ElectricityCountriesResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+        countries:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElectricityCountry'
+        campsites:
+          $ref: '#/components/schemas/ElectricityCampsites'
+        upstream:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              url:
+                type: string
+                format: uri
+              license:
+                type: string
+                nullable: true
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    ElectricityCountryResponse:
+      allOf:
+      - $ref: '#/components/schemas/ElectricityCountry'
+      - type: object
+        properties:
+          source:
+            type: object
+            properties:
+              name:
+                type: string
+              url:
+                type: string
+                format: uri
+              row:
+                type: string
+          wikidata_plugs:
+            type: array
+            items:
+              type: string
+          campsites:
+            $ref: '#/components/schemas/ElectricityCampsites'
+          _attribution:
+            $ref: '#/components/schemas/Attribution'
+    CustomsCatalogResponse:
+      type: object
+      properties:
+        blocs:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              members:
+                type: array
+                items:
+                  type: string
+              name:
+                type: string
+        jurisdictions:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              topics:
+                type: array
+                items:
+                  type: string
+        built:
+          type: string
+          format: date
+          nullable: true
+        _attribution:
+          $ref: '#/components/schemas/Attribution'
+    CustomsItem:
+      type: object
+      properties:
+        jurisdiction:
+          type: string
+          example: EU
+        topic:
+          type: string
+          enum:
+          - food
+          - food_penalty
+          - cash
+          - alcohol
+          - tobacco
+          - value
+          - fuel
+        severity:
+          type: string
+          enum:
+          - ban
+          - declare
+          - limit
+        summary:
+          type: string
+        value:
+          type: object
+          nullable: true
+          description: Machine-readable limit, e.g. {amount, currency} for cash.
+        exempt_from:
+          type: array
+          items:
+            type: string
+          description: Countries of departure the rule does not apply to.
+        quote:
+          type: string
+          description: Verbatim quote of the official source.
+        source_name:
+          type: string
+        source_url:
+          type: string
+          format: uri
+        checked:
+          type: string
+          format: date
+    CustomsCountryResponse:
+      type: object
+      properties:
+        country_code:
+          type: string
+        name:
+          type: string
+        from:
+          type: string
+          nullable: true
+        blocs:
+          type: array
+          items:
+            type: string
+        covered:
+          type: boolean
+          description: false = no data for this country (HTTP 404), not "nothing is restricted".
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomsItem'
         _attribution:
           $ref: '#/components/schemas/Attribution'

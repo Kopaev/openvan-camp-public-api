@@ -5,10 +5,14 @@
 
 **Official MCP server for [OpenVan.camp](https://openvan.camp)** — free, no-auth, machine-readable vanlife and RV travel data for AI agents.
 
-Exposes 20 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
+Exposes 25 read-only tools via the [Model Context Protocol](https://modelcontextprotocol.io) so you can ask your AI assistant about:
 
 - **Fuel prices** across all API-supported countries, using the same price keys as `/api/fuel/prices`
 - **Toll roads** — per-km rates, vignettes, toll bridges and tunnels by country; toll estimate for a route
+- **Holidays and peak traffic** — public and school holidays (regional), official peak traffic days
+- **Travel hazards** — UK FCDO advice level, GDACS natural disasters, NASA FIRMS active fires of the last 48 hours
+- **Power plugs** — plug types, mains voltage and frequency, campsite hook-up connector (CEE17)
+- **Customs rules** — food bans, cash declaration, alcohol and tobacco limits, with official quotes
 - **VanSky** vanlife weather suitability scores (0-100)
 - **VanBasket** food price index (world average = 100)
 - **Currency** conversion (150+ currencies)
@@ -97,6 +101,11 @@ npx -y @openvancamp/mcp-server
 | `get_license_plate_image` | The plate as an image (PNG inline + SVG/PNG links); any text with `custom` |
 | `get_toll_rates` | Toll reference for one country: per-km rates by vehicle class, vignettes, bridges and tunnels |
 | `estimate_route_tolls` | Toll cost for a route of 2–10 place names as a EUR range, flags partial results |
+| `get_holidays` | Public holidays, school holidays (with ISO 3166-2 regions) and peak traffic days for up to 400 days |
+| `get_travel_hazards` | FCDO travel advice level and current GDACS disasters with alert level in one country |
+| `get_active_fires` | NASA FIRMS satellite fire detections of the last 48 hours in a bounding box up to 10°×10° |
+| `get_power_plugs` | Plug types (IEC A–N), voltage and frequency, campsite hook-up connector in Europe |
+| `get_customs_rules` | Customs rules on entry by car: food, cash, alcohol, tobacco, fuel canister, with source quotes |
 
 All tools are `readOnlyHint: true` and `openWorldHint: false`. Safe to allow by default.
 
@@ -111,6 +120,9 @@ All tools are `readOnlyHint: true` and `openWorldHint: false`. Safe to allow by 
 - "Convert 500 EUR to Turkish lira using today's rate."
 - "How expensive is food in Portugal vs Turkey?"
 - "Which Russian region is plate code 199? Show me a plate with it."
+- "Are there school holidays or peak traffic days in France next week?"
+- "Any wildfires near Valencia right now?"
+- "Can I bring cheese and sausage into Norway by car?"
 
 ---
 
