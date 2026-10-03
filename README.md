@@ -1,5 +1,7 @@
 # OpenVan.camp Public API
 
+![OpenVan.camp — free road-trip data API for every country](.github/banner.png)
+
 [![MCP server on npm](https://img.shields.io/npm/v/@openvancamp/mcp-server?label=mcp-server)](https://www.npmjs.com/package/@openvancamp/mcp-server)
 [![SDK on npm](https://img.shields.io/npm/v/@openvancamp/sdk?label=sdk)](https://www.npmjs.com/package/@openvancamp/sdk)
 [![npm downloads](https://img.shields.io/npm/dm/@openvancamp/mcp-server?label=mcp%20downloads)](https://www.npmjs.com/package/@openvancamp/mcp-server)
