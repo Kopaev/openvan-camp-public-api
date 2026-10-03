@@ -10,6 +10,13 @@
   that use the API, with a badge snippet for your own README.
 - MCP Registry: `io.github.Kopaev/openvan-travel` 0.6.0 published.
 
+### Fixed (SDK v1.1.1)
+- `weather.top()` called `/api/vansky/top`, which does not exist, and always failed with 404. It now
+  ranks `/api/vansky/weather` by `van_score`.
+- `weather.score(code)` sent `?country=`, which the API ignores, and returned all 164 countries. It now
+  calls `/api/vansky/weather/{code}` and returns one country.
+- New `weather.all()`.
+
 ## 2026-10-02
 
 ### Added

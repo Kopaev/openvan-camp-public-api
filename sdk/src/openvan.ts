@@ -193,23 +193,28 @@ class WeatherResource {
   constructor(private readonly client: OpenVanClient) {}
 
   /**
-   * Vanlife weather data for a country.
-   * API returns { data: [...], count, updated_at, source } — data is an array of locations.
+   * Vanlife weather for one country: `van_score` 0–100, `score_label`, 7-day `forecast`,
+   * sleep / drive / solar / sea scores.
    */
-  async score(countryCode: string): Promise<unknown[]> {
-    const res = await this.client.get<{ data: unknown[]; count: number; updated_at: string }>(
-      "/api/vansky/weather",
-      { country: countryCode.toUpperCase() }
+  async score(countryCode: string): Promise<Record<string, unknown>> {
+    const res = await this.client.get<{ data: Record<string, unknown> }>(
+      `/api/vansky/weather/${countryCode.toUpperCase()}`
     );
     return res.data;
   }
 
-  /** Top N countries by vanlife weather suitability. */
-  async top(options: VanSkyTopOptions = {}): Promise<unknown> {
-    return this.client.get("/api/vansky/top", {
-      limit: options.limit,
-      locale: options.locale,
-    });
+  /** All countries with weather data (one request, ~1 MB). */
+  async all(): Promise<Record<string, unknown>[]> {
+    const res = await this.client.get<{ data: Record<string, unknown>[] }>("/api/vansky/weather");
+    return res.data;
+  }
+
+  /** Top N countries by vanlife weather suitability today, best first. */
+  async top(options: VanSkyTopOptions = {}): Promise<Record<string, unknown>[]> {
+    const all = await this.all();
+    return [...all]
+      .sort((a, b) => Number(b.van_score ?? 0) - Number(a.van_score ?? 0))
+      .slice(0, options.limit ?? 10);
   }
 }
 

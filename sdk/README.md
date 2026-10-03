@@ -151,12 +151,13 @@ console.log(`diff: ${comp.diff_percent}%, €100 in Spain ≈ €${comp.budget_1
 
 | Method | Returns |
 |---|---|
-| `.score(countryCode, locale?)` | `VanSkyCountry` — 7-day forecast with scores |
-| `.top(options?)` | `VanSkyTopEntry[]` — top N countries |
+| `.score(countryCode)` | one country — `van_score` 0–100, `score_label`, 7-day `forecast` |
+| `.all()` | every country with weather data |
+| `.top(options?)` | top N countries by `van_score`, best first |
 
 ```ts
 const fr = await ov.weather.score("FR");
-console.log(fr.score);          // overall 7-day score 0-100
+console.log(fr.van_score);      // today's score 0-100, fr.score_label: "ideal" … "poor"
 console.log(fr.forecast[0]);    // today's detailed scores
 ```
 
