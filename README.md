@@ -4,6 +4,7 @@
 [![SDK on npm](https://img.shields.io/npm/v/@openvancamp/sdk?label=sdk)](https://www.npmjs.com/package/@openvancamp/sdk)
 [![npm downloads](https://img.shields.io/npm/dm/@openvancamp/mcp-server?label=mcp%20downloads)](https://www.npmjs.com/package/@openvancamp/mcp-server)
 [![Data: CC BY 4.0](https://img.shields.io/badge/data-CC%20BY%204.0-467187)](https://creativecommons.org/licenses/by/4.0/)
+[![CI](https://github.com/openvancamp/openvan-camp-public-api/actions/workflows/ci.yml/badge.svg)](https://github.com/openvancamp/openvan-camp-public-api/actions/workflows/ci.yml)
 [![OpenVan MCP server on Glama](https://glama.ai/mcp/servers/openvancamp/openvan-camp-public-api/badges/score.svg)](https://glama.ai/mcp/servers/openvancamp/openvan-camp-public-api)
 
 Free, no-auth API for vanlife data: fuel prices, route fuel cost, toll roads, holidays and peak traffic days, travel hazards, power plugs, customs rules, currency rates, food cost index, weather suitability scores, visa and vehicle-import rules, vanlife events, news stories, and license plates of the world — all in one place, no registration required.
@@ -14,6 +15,8 @@ Free, no-auth API for vanlife data: fuel prices, route fuel cost, toll roads, ho
 **License:** data is [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); code in this repository (SDK, MCP server, examples) is [MIT](./LICENSE)
 
 **JavaScript/TypeScript SDK:** [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) — `npm install @openvancamp/sdk`. Zero-config, typed, Node.js / browser / edge. [SDK docs →](./sdk/README.md)
+
+**Python SDK:** [`openvan`](./python-sdk) — `pip install openvan`. No dependencies, Python 3.9+, works with pandas. [Python docs →](./python-sdk/README.md)
 
 **MCP Server (for AI agents):** [`mcp-server/`](./mcp-server) — 25 read-only tools, hosted at `https://mcp.openvan.camp/mcp`, or locally `npx -y @openvancamp/mcp-server` for Claude Desktop / Cursor / Windsurf. [Install docs →](./mcp-server/README.md) · [AI agents guide →](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
 
@@ -542,6 +545,7 @@ npm: [`@openvancamp/sdk`](https://www.npmjs.com/package/@openvancamp/sdk) · [Fu
 - **OpenAPI 3.0 spec:** https://openvan.camp/docs.openapi
 - **Postman collection:** https://openvan.camp/docs.postman
 - **JavaScript SDK:** https://www.npmjs.com/package/@openvancamp/sdk
+- **Python SDK:** [`python-sdk/`](./python-sdk) — `pip install openvan`
 - **Developer page:** [openvan.camp/en/developers](https://openvan.camp/en/developers?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
 - **For AI agents (MCP, Custom GPT, llms.txt):** [openvan.camp/ai](https://openvan.camp/ai?utm_source=github&utm_medium=referral&utm_campaign=public-api-repo)
 

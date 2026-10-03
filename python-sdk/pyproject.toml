@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openvan"
+dynamic = ["version"]
+description = "Free vanlife & RV travel data: fuel prices in 160+ countries, toll roads, visa rules, holidays, travel hazards, weather scores, currency. No API key."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "OpenVan.camp", email = "hello@openvan.camp" }]
+keywords = [
+  "vanlife", "rv", "campervan", "motorhome", "road-trip", "travel", "fuel-prices", "gas-prices",
+  "toll-roads", "visa", "holidays", "currency", "weather", "open-data", "api-client",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Scientific/Engineering :: GIS",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://openvan.camp/en/developers?utm_source=pypi&utm_medium=referral&utm_campaign=python-sdk"
+Documentation = "https://openvan.camp/docs?utm_source=pypi&utm_medium=referral&utm_campaign=python-sdk"
+Source = "https://github.com/openvancamp/openvan-camp-public-api/tree/main/python-sdk"
+Changelog = "https://github.com/openvancamp/openvan-camp-public-api/blob/main/CHANGELOG.md"
+Issues = "https://github.com/openvancamp/openvan-camp-public-api/issues"
+
+[tool.hatch.version]
+path = "src/openvan/client.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openvan"]

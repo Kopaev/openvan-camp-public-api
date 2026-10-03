@@ -10,6 +10,12 @@
   that use the API, with a badge snippet for your own README.
 - MCP Registry: `io.github.Kopaev/openvan-travel` 0.6.0 published.
 
+- **Python SDK** [`openvan`](./python-sdk) 0.1.0 — the same 13 resources as the JavaScript SDK in
+  snake_case, standard library only, Python 3.9+. Released with the `python-vX.Y.Z` tag through PyPI
+  Trusted Publishing.
+- **CI** (`.github/workflows/ci.yml`): Python SDK unit tests on 3.9 and 3.13, builds of the JS SDK and
+  the MCP server.
+
 ### Fixed (SDK v1.1.1)
 - `weather.top()` called `/api/vansky/top`, which does not exist, and always failed with 404. It now
   ranks `/api/vansky/weather` by `van_score`.

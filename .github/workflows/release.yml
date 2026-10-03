@@ -1,6 +1,7 @@
 # Publishes a package when its version tag is pushed:
 #   mcp-server-vX.Y.Z → npm @openvancamp/mcp-server + MCP Registry + GitHub Release
 #   sdk-vX.Y.Z        → npm @openvancamp/sdk + GitHub Release
+#   python-vX.Y.Z     → PyPI openvan + GitHub Release
 # The tag version must match package.json. Re-running for an already published
 # version skips the steps that are done, so a failed run can simply be retried.
 #
@@ -8,6 +9,7 @@
 #   NPM_TOKEN                   npm automation token (not needed once npm Trusted Publishing is set up)
 #   MCP_REGISTRY_GITHUB_TOKEN   GitHub token of Kopaev — the registry name is io.github.Kopaev/openvan-travel,
 #                               so OIDC of the openvancamp org cannot publish it
+# PyPI needs no secret: it trusts this workflow (Trusted Publishing, environment "pypi").
 
 name: Release
 
@@ -16,6 +18,7 @@ on:
     tags:
       - 'mcp-server-v*'
       - 'sdk-v*'
+      - 'python-v*'
   workflow_dispatch:
     inputs:
       tag:
@@ -28,6 +31,7 @@ permissions:
 
 jobs:
   release:
+    if: ${{ !startsWith(inputs.tag || github.ref_name, 'python-v') }}
     runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag || github.ref_name }}
@@ -102,3 +106,51 @@ jobs:
           gh release create "$TAG" --verify-tag \
             --title "${{ steps.pkg.outputs.name }} v${{ steps.pkg.outputs.version }}" \
             --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what changed. npm: [\`${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}\`](https://www.npmjs.com/package/${{ steps.pkg.outputs.name }}/v/${{ steps.pkg.outputs.version }})"
+
+  pypi:
+    if: ${{ startsWith(inputs.tag || github.ref_name, 'python-v') }}
+    runs-on: ubuntu-latest
+    environment: pypi
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check version, test, build
+        id: pkg
+        working-directory: python-sdk
+        run: |
+          version="${TAG#python-v}"
+          pkg_version=$(python -c "import re;print(re.search(r'__version__ = \"(.+?)\"', open('src/openvan/client.py').read())[1])")
+          if [ "$pkg_version" != "$version" ]; then
+            echo "Tag $TAG does not match python-sdk version $pkg_version"; exit 1
+          fi
+          PYTHONPATH=src python -m unittest discover -s tests
+          pip install build
+          python -m build
+          if curl -sf "https://pypi.org/pypi/openvan/$version/json" > /dev/null; then
+            echo "published=yes" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to PyPI
+        if: steps.pkg.outputs.published != 'yes'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python-sdk/dist
+
+      - name: GitHub Release
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG exists"; exit 0
+          fi
+          gh release create "$TAG" --verify-tag \
+            --title "Python SDK v${{ steps.pkg.outputs.version }} — pip install openvan" \
+            --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what changed. PyPI: [\`openvan ${{ steps.pkg.outputs.version }}\`](https://pypi.org/project/openvan/${{ steps.pkg.outputs.version }}/)"
