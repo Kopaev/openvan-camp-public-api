@@ -7,6 +7,7 @@
 [![npm downloads](https://img.shields.io/npm/dm/@openvancamp/mcp-server?label=mcp%20downloads)](https://www.npmjs.com/package/@openvancamp/mcp-server)
 [![Data: CC BY 4.0](https://img.shields.io/badge/data-CC%20BY%204.0-467187)](https://creativecommons.org/licenses/by/4.0/)
 [![CI](https://github.com/openvancamp/openvan-camp-public-api/actions/workflows/ci.yml/badge.svg)](https://github.com/openvancamp/openvan-camp-public-api/actions/workflows/ci.yml)
+[![Published packages work](https://github.com/openvancamp/openvan-camp-public-api/actions/workflows/verify-distribution.yml/badge.svg)](https://github.com/openvancamp/openvan-camp-public-api/actions/workflows/verify-distribution.yml)
 [![OpenVan MCP server on Glama](https://glama.ai/mcp/servers/openvancamp/openvan-camp-public-api/badges/score.svg)](https://glama.ai/mcp/servers/openvancamp/openvan-camp-public-api)
 
 Free, no-auth API for vanlife data: fuel prices, route fuel cost, toll roads, holidays and peak traffic days, travel hazards, power plugs, customs rules, currency rates, food cost index, weather suitability scores, visa and vehicle-import rules, vanlife events, news stories, and license plates of the world — all in one place, no registration required.

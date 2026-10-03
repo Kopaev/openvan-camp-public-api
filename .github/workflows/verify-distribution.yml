@@ -1,0 +1,26 @@
+# Checks from the outside that every published thing works: npm, PyPI, MCP Registry,
+# GitHub Releases, `npx -y @openvancamp/mcp-server`, the hosted MCP endpoint, the SDKs
+# against the live API, and the daily data repository. Red badge = something is broken.
+name: Verify distribution
+
+on:
+  schedule:
+    - cron: '41 7 * * *'
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify
+        run: bash scripts/verify-distribution.sh
