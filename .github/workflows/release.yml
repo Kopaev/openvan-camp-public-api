@@ -1,0 +1,104 @@
+# Publishes a package when its version tag is pushed:
+#   mcp-server-vX.Y.Z → npm @openvancamp/mcp-server + MCP Registry + GitHub Release
+#   sdk-vX.Y.Z        → npm @openvancamp/sdk + GitHub Release
+# The tag version must match package.json. Re-running for an already published
+# version skips the steps that are done, so a failed run can simply be retried.
+#
+# Secrets:
+#   NPM_TOKEN                   npm automation token (not needed once npm Trusted Publishing is set up)
+#   MCP_REGISTRY_GITHUB_TOKEN   GitHub token of Kopaev — the registry name is io.github.Kopaev/openvan-travel,
+#                               so OIDC of the openvancamp org cannot publish it
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'mcp-server-v*'
+      - 'sdk-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish, e.g. mcp-server-v0.6.0'
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Resolve package
+        id: pkg
+        run: |
+          case "$TAG" in
+            mcp-server-v*) dir=mcp-server; version="${TAG#mcp-server-v}" ;;
+            sdk-v*)        dir=sdk;        version="${TAG#sdk-v}" ;;
+            *) echo "Unknown tag $TAG"; exit 1 ;;
+          esac
+          name=$(jq -r .name "$dir/package.json")
+          pkg_version=$(jq -r .version "$dir/package.json")
+          if [ "$pkg_version" != "$version" ]; then
+            echo "Tag $TAG does not match $dir/package.json version $pkg_version"; exit 1
+          fi
+          if [ "$dir" = mcp-server ] && [ "$(jq -r .version mcp-server/server.json)" != "$version" ]; then
+            echo "mcp-server/server.json version differs from $version"; exit 1
+          fi
+          published=$(npm view "$name@$version" version 2>/dev/null || true)
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "published=$published" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        if: steps.pkg.outputs.published == ''
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish to npm
+        if: steps.pkg.outputs.published == ''
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm install -g npm@latest
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npm publish --access public --provenance
+
+      - name: Publish to MCP Registry
+        if: steps.pkg.outputs.dir == 'mcp-server'
+        working-directory: mcp-server
+        env:
+          REGISTRY_TOKEN: ${{ secrets.MCP_REGISTRY_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$REGISTRY_TOKEN" ]; then
+            echo "::warning::MCP_REGISTRY_GITHUB_TOKEN is not set, registry not updated"; exit 0
+          fi
+          name=$(jq -r .name server.json)
+          version=${{ steps.pkg.outputs.version }}
+          if curl -sf "https://registry.modelcontextprotocol.io/v0.1/servers?search=${name#*/}" \
+              | jq -e --arg n "$name" --arg v "$version" '.servers[] | select(.server.name == $n and .server.version == $v)' > /dev/null; then
+            echo "$name $version is already in the registry"; exit 0
+          fi
+          curl -sL https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz | tar xz mcp-publisher
+          ./mcp-publisher login github -token "$REGISTRY_TOKEN"
+          ./mcp-publisher publish
+
+      - name: GitHub Release
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG exists"; exit 0
+          fi
+          gh release create "$TAG" --verify-tag \
+            --title "${{ steps.pkg.outputs.name }} v${{ steps.pkg.outputs.version }}" \
+            --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what changed. npm: [\`${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}\`](https://www.npmjs.com/package/${{ steps.pkg.outputs.name }}/v/${{ steps.pkg.outputs.version }})"

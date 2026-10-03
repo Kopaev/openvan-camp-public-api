@@ -1,5 +1,11 @@
 # OpenVan.camp Public API
 
+[![MCP server on npm](https://img.shields.io/npm/v/@openvancamp/mcp-server?label=mcp-server)](https://www.npmjs.com/package/@openvancamp/mcp-server)
+[![SDK on npm](https://img.shields.io/npm/v/@openvancamp/sdk?label=sdk)](https://www.npmjs.com/package/@openvancamp/sdk)
+[![npm downloads](https://img.shields.io/npm/dm/@openvancamp/mcp-server?label=mcp%20downloads)](https://www.npmjs.com/package/@openvancamp/mcp-server)
+[![Data: CC BY 4.0](https://img.shields.io/badge/data-CC%20BY%204.0-467187)](https://creativecommons.org/licenses/by/4.0/)
+[![OpenVan MCP server on Glama](https://glama.ai/mcp/servers/openvancamp/openvan-camp-public-api/badges/score.svg)](https://glama.ai/mcp/servers/openvancamp/openvan-camp-public-api)
+
 Free, no-auth API for vanlife data: fuel prices, route fuel cost, toll roads, holidays and peak traffic days, travel hazards, power plugs, customs rules, currency rates, food cost index, weather suitability scores, visa and vehicle-import rules, vanlife events, news stories, and license plates of the world — all in one place, no registration required.
 
 **Base URL:** `https://openvan.camp`  
@@ -475,6 +481,28 @@ curl "https://openvan.camp/api/fuel/prices?source=myapp.com"
 ```
 
 This helps us understand how the data is being used and acknowledge active projects.
+
+---
+
+## Built with OpenVan
+
+Public projects using the API:
+
+| Project | What it does | Uses |
+|---------|--------------|------|
+| [cyfuel](https://github.com/bushellsblower-maker/cyfuel) | Fuel-price map that ranks an "efficient fill": tank cost plus the fuel burned driving there ([cyfuel.cybush.uk](https://cyfuel.cybush.uk)) | fuel prices |
+| [DriveLog](https://github.com/abdalahshaban07/DriveLog) | Driving and fuel log web app | fuel prices |
+| [E-Logistic](https://github.com/Gh0s777tt/E-Map) | Logistics platform with EU diesel prices by country | fuel prices |
+
+Built something with the data? Open a pull request adding it to this table, or tell us in [Discussions](https://github.com/openvancamp/openvan-camp-public-api/discussions).
+
+Badge for your README:
+
+```markdown
+[![Data: OpenVan.camp](https://img.shields.io/badge/data-OpenVan.camp-467187)](https://openvan.camp/)
+```
+
+[![Data: OpenVan.camp](https://img.shields.io/badge/data-OpenVan.camp-467187)](https://openvan.camp/)
 
 ---
 

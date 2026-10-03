@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-03
+
+### Added
+- **Release workflow** (`.github/workflows/release.yml`): pushing `mcp-server-vX.Y.Z` or `sdk-vX.Y.Z`
+  publishes the package to npm with provenance, the MCP server to the official MCP Registry, and
+  creates the GitHub Release. Can be re-run for an existing tag.
+- README: npm / license / Glama badges and a **Built with OpenVan** section listing public projects
+  that use the API, with a badge snippet for your own README.
+- MCP Registry: `io.github.Kopaev/openvan-travel` 0.6.0 published.
+
 ## 2026-10-02
 
 ### Added
