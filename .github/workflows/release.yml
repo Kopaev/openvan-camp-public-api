@@ -103,7 +103,10 @@ jobs:
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "Release $TAG exists"; exit 0
           fi
-          gh release create "$TAG" --verify-tag \
+          # Only MCP server releases take the "Latest" badge on the repository page.
+          latest=false
+          [ "${{ steps.pkg.outputs.dir }}" = mcp-server ] && latest=true
+          gh release create "$TAG" --verify-tag --latest="$latest" \
             --title "${{ steps.pkg.outputs.name }} v${{ steps.pkg.outputs.version }}" \
             --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what changed. npm: [\`${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}\`](https://www.npmjs.com/package/${{ steps.pkg.outputs.name }}/v/${{ steps.pkg.outputs.version }})"
 
@@ -151,6 +154,6 @@ jobs:
           if gh release view "$TAG" > /dev/null 2>&1; then
             echo "Release $TAG exists"; exit 0
           fi
-          gh release create "$TAG" --verify-tag \
+          gh release create "$TAG" --verify-tag --latest=false \
             --title "Python SDK v${{ steps.pkg.outputs.version }} — pip install openvan" \
             --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for what changed. PyPI: [\`openvan ${{ steps.pkg.outputs.version }}\`](https://pypi.org/project/openvan/${{ steps.pkg.outputs.version }}/)"

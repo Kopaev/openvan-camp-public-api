@@ -16,6 +16,12 @@
 - **CI** (`.github/workflows/ci.yml`): Python SDK unit tests on 3.9 and 3.13, builds of the JS SDK and
   the MCP server.
 
+### Fixed (MCP server v0.6.1)
+- **`npx -y @openvancamp/mcp-server` failed with "could not determine executable to run"** in every
+  earlier version: the package had two binaries (`openvan-mcp`, `openvan-mcp-sse`) and npx could not
+  pick one. A `mcp-server` binary matching the package name is added, so the documented command and
+  Claude Desktop / Cursor configs work. The old binary names still work.
+
 ### Fixed (SDK v1.1.1)
 - `weather.top()` called `/api/vansky/top`, which does not exist, and always failed with 404. It now
   ranks `/api/vansky/weather` by `van_score`.

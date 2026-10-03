@@ -45,7 +45,7 @@
   "homepage": "https://openvan.camp/docs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/openvancamp/openvan-camp-public-api.git",
+    "url": "git+https://github.com/openvancamp/openvan-camp-public-api.git",
     "directory": "sdk"
   },
   "bugs": {
